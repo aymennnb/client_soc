@@ -11,17 +11,27 @@ function AuthenticatedLayout() {
     }
 
     return (
-        <div>
-            {/* Barre du haut */}
-            <div style={{ borderBottom: '1px solid #ccc', padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong>SOC App</strong>
-                <button onClick={handleLogout}>Logout</button>
-            </div>
-            <div style={{ display: 'flex' }}>
-                {/* Sidebar */}
-                <Sidebar/>
-                {/* Contenu principal */}
-                <main style={{ flex: 1, padding: '16px' }}>
+        <div className="min-h-screen bg-[#0b0f12] text-slate-100">
+            <header className="flex items-center justify-between border-b border-[#1c2b2f] bg-black px-6 py-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#00A897] text-black font-bold">
+                        S
+                    </div>
+                    <div>
+                        <p className="text-sm uppercase tracking-[0.2em] text-slate-400">SOC Dashboard</p>
+                        <h1 className="text-lg font-semibold">SOC App</h1>
+                    </div>
+                </div>
+                <button
+                    onClick={handleLogout}
+                    className="rounded-lg border border-[#275B66] px-4 py-2 text-sm font-semibold text-[#00A897] transition hover:bg-[#275B66] hover:text-white"
+                >
+                    Logout
+                </button>
+            </header>
+            <div className="flex">
+                <Sidebar />
+                <main className="flex-1 p-6 md:p-8">
                     <Outlet />
                 </main>
             </div>
