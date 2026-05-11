@@ -1,11 +1,12 @@
 import { Outlet, Navigate } from 'react-router-dom'
+import { useKeycloak } from '../context/KeycloakContext'
 
 function GuestLayout() {
+    const { isAuthenticated, loading } = useKeycloak()
 
-    const token = localStorage.getItem('token')
-    if (token) {
-        return <Navigate to="/" />
-    }
+    if (loading) return null
+
+    if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
     return (
         <div>

@@ -1,1 +1,94 @@
 @import "tailwindcss";
+
+/* ── Light mode overrides ───────────────────────────────────────────────────
+   Applied by toggling the class "light-mode" on <html>.
+   All dark Tailwind classes (bg-black, bg-[#0b0f12], etc.) are overridden here.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+html.light-mode {
+    /* Page background */
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
+html.light-mode .min-h-screen {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+/* Header */
+html.light-mode header {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* Sidebar */
+html.light-mode aside {
+    background-color: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+}
+
+/* Cards / panels */
+html.light-mode .bg-black\/60,
+html.light-mode .bg-black\/40,
+html.light-mode .bg-black\/50 {
+    background-color: #ffffff !important;
+}
+
+html.light-mode .bg-\[\#0a1215\] {
+    background-color: #f8fafc !important;
+}
+
+html.light-mode .bg-\[\#080f12\] {
+    background-color: #f1f5f9 !important;
+}
+
+html.light-mode .bg-\[\#0e1e24\],
+html.light-mode .hover\:bg-\[\#0e1e24\]:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* Borders */
+html.light-mode .border-\[\#1c2b2f\] {
+    border-color: #e2e8f0 !important;
+}
+
+html.light-mode .border-\[\#0e1a1e\],
+html.light-mode .divide-\[\#0e1a1e\] > * + * {
+    border-color: #f1f5f9 !important;
+}
+
+/* Text */
+html.light-mode .text-slate-100 { color: #0f172a !important; }
+html.light-mode .text-slate-200 { color: #1e293b !important; }
+html.light-mode .text-slate-300 { color: #334155 !important; }
+html.light-mode .text-slate-400 { color: #64748b !important; }
+html.light-mode .text-slate-500 { color: #94a3b8 !important; }
+html.light-mode .text-white     { color: #0f172a !important; }
+
+/* Inputs */
+html.light-mode input,
+html.light-mode select,
+html.light-mode textarea {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+html.light-mode input::placeholder,
+html.light-mode textarea::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* Table rows */
+html.light-mode tbody tr {
+    background-color: #ffffff !important;
+}
+
+html.light-mode tbody tr:hover {
+    background-color: #f8fafc !important;
+}
+
+html.light-mode thead tr {
+    background-color: #f1f5f9 !important;
+}
