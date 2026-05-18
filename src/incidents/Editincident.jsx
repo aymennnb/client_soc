@@ -1,40 +1,189 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 import api from '../api'
 import {
     SEVERITY_LABELS, SEVERITY_BADGES, SEVERITY_DOTS,
     STATUS_LABELS, fmt,
 } from './incidentConstants'
+import { X, Siren, Loader2, AlertCircle, Save } from 'lucide-react'
 
-const inputCls = "w-full rounded-lg border border-[#1c2b2f] bg-[#0a1215] px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 transition focus:border-[#00A897] focus:outline-none focus:ring-1 focus:ring-[#00A897]/40"
-const labelCls = "block text-[10px] font-semibold uppercase tracking-widest text-slate-500 mb-1.5"
+// ─── Design tokens ────────────────────────────────────────────────────────────
 
-function EditIncident() {
-    const navigate = useNavigate()
-    const { id }   = useParams()
+const SEVERITY_ACCENT = {
+    4: { color: '#f87171', bg: 'rgba(239,68,68,0.10)',   border: 'rgba(239,68,68,0.25)',   bar: '#ef4444' },
+    3: { color: '#fb923c', bg: 'rgba(249,115,22,0.10)',  border: 'rgba(249,115,22,0.25)',  bar: '#f97316' },
+    2: { color: '#fbbf24', bg: 'rgba(245,158,11,0.10)',  border: 'rgba(245,158,11,0.25)',  bar: '#f59e0b' },
+    1: { color: '#4ade80', bg: 'rgba(34,197,94,0.10)',   border: 'rgba(34,197,94,0.25)',   bar: '#22c55e' },
+    0: { color: '#94a3b8', bg: 'rgba(100,116,139,0.10)', border: 'rgba(100,116,139,0.25)', bar: '#64748b' },
+}
 
+const STATUS_CONFIG = {
+    open:        { label: 'Open',        color: '#f87171', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)'   },
+    in_progress: { label: 'In Progress', color: '#38bdf8', bg: 'rgba(56,189,248,0.08)',  border: 'rgba(56,189,248,0.2)'  },
+    resolved:    { label: 'Resolved',    color: '#4ade80', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.2)'   },
+}
+
+// ─── Form primitives ──────────────────────────────────────────────────────────
+
+function Field({ label, required, hint, children }) {
+    return (
+        <div className="space-y-1.5">
+            <label style={{
+                display: 'block', fontSize: '10px', fontWeight: '600',
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: '#4a7a8a', marginBottom: '6px',
+            }}>
+                {label}
+                {required && <span style={{ color: '#f87171', marginLeft: '3px' }}>*</span>}
+            </label>
+            {children}
+            {hint && <p className="text-[10px]" style={{ color: '#2d4a5a' }}>{hint}</p>}
+        </div>
+    )
+}
+
+const baseInputStyle = {
+    background: 'rgba(6,14,22,0.8)',
+    border: '1px solid #1b263b',
+    color: '#cbd5e1',
+    borderRadius: '10px',
+    padding: '10px 14px',
+    fontSize: '13px',
+    width: '100%',
+    outline: 'none',
+    transition: 'border-color 0.15s, box-shadow 0.15s',
+}
+
+function StyledInput({ style: extraStyle, ...props }) {
+    return (
+        <input
+            {...props}
+            className="placeholder-[#2d4a5a]"
+            style={{ ...baseInputStyle, ...extraStyle }}
+            onFocus={e => {
+                e.currentTarget.style.borderColor = 'rgba(2,195,154,0.5)'
+                e.currentTarget.style.boxShadow   = '0 0 0 3px rgba(2,195,154,0.08)'
+            }}
+            onBlur={e => {
+                e.currentTarget.style.borderColor = '#1b263b'
+                e.currentTarget.style.boxShadow   = 'none'
+            }}
+        />
+    )
+}
+
+function StyledTextarea({ rows = 4, style: extraStyle, ...props }) {
+    return (
+        <textarea
+            rows={rows}
+            {...props}
+            className="placeholder-[#2d4a5a] resize-none"
+            style={{ ...baseInputStyle, ...extraStyle }}
+            onFocus={e => {
+                e.currentTarget.style.borderColor = 'rgba(2,195,154,0.5)'
+                e.currentTarget.style.boxShadow   = '0 0 0 3px rgba(2,195,154,0.08)'
+            }}
+            onBlur={e => {
+                e.currentTarget.style.borderColor = '#1b263b'
+                e.currentTarget.style.boxShadow   = 'none'
+            }}
+        />
+    )
+}
+
+// ─── Severity picker ──────────────────────────────────────────────────────────
+
+function SeverityPicker({ value, onChange }) {
+    return (
+        <div className="flex flex-wrap gap-2">
+            {Object.entries(SEVERITY_LABELS).reverse().map(([num, label]) => {
+                const isSelected = String(value) === String(num)
+                const accent = SEVERITY_ACCENT[Number(num)]
+                return (
+                    <button
+                        key={num}
+                        type="button"
+                        onClick={() => onChange(num)}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150"
+                        style={{
+                            background: isSelected ? accent.bg : 'rgba(27,38,59,0.4)',
+                            border:     isSelected ? `1px solid ${accent.border}` : '1px solid #1b263b',
+                            color:      isSelected ? accent.color : '#4a7a8a',
+                        }}
+                        onMouseEnter={e => {
+                            if (!isSelected) {
+                                e.currentTarget.style.background  = accent.bg
+                                e.currentTarget.style.borderColor = accent.border
+                                e.currentTarget.style.color       = accent.color
+                            }
+                        }}
+                        onMouseLeave={e => {
+                            if (!isSelected) {
+                                e.currentTarget.style.background  = 'rgba(27,38,59,0.4)'
+                                e.currentTarget.style.borderColor = '#1b263b'
+                                e.currentTarget.style.color       = '#4a7a8a'
+                            }
+                        }}
+                    >
+                        {label}
+                    </button>
+                )
+            })}
+        </div>
+    )
+}
+
+// ─── Meta pill ────────────────────────────────────────────────────────────────
+
+function MetaPill({ label, value, valueStyle }) {
+    return (
+        <span
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px]"
+            style={{ background: 'rgba(27,38,59,0.5)', border: '1px solid #1b263b', color: '#4a7a8a' }}
+        >
+            {label}:&nbsp;
+            <span className="font-semibold" style={valueStyle ?? { color: '#94a3b8' }}>{value}</span>
+        </span>
+    )
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function SkeletonForm() {
+    return (
+        <div className="space-y-5 px-6 py-6">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="space-y-2">
+                    <div className="h-2.5 w-24 rounded-md animate-pulse" style={{ background: 'rgba(27,38,59,0.7)' }} />
+                    <div className="h-10 w-full rounded-xl animate-pulse" style={{ background: 'rgba(27,38,59,0.5)' }} />
+                </div>
+            ))}
+        </div>
+    )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+function EditIncident({ incidentId, onClose, onSaved }) {
     const [original, setOriginal] = useState(null)
-    const [form,     setForm]     = useState({
-        title:       '',
-        description: '',
-        severity:    '2',
-        status:      'open',
+    const [form, setForm] = useState({
+        title: '', description: '', severity: '2', status: 'open',
     })
     const [loading, setLoading] = useState(true)
     const [saving,  setSaving]  = useState(false)
     const [error,   setError]   = useState('')
 
-    const onClose = () => navigate('/incidents')
-
     // Close on Escape
     useEffect(() => {
-        const handler = (e) => { if (e.key === 'Escape') onClose() }
+        const handler = (e) => { if (e.key === 'Escape') onClose?.() }
         window.addEventListener('keydown', handler)
         return () => window.removeEventListener('keydown', handler)
-    }, [])
+    }, [onClose])
 
+    // Load incident
     useEffect(() => {
-        api.get(`/incidents/${id}`)
+        if (!incidentId) return
+        setLoading(true)
+        api.get(`/incidents/${incidentId}`)
             .then(res => {
                 const inc = res.data
                 setOriginal(inc)
@@ -47,22 +196,22 @@ function EditIncident() {
             })
             .catch(err => setError(err.response?.data?.message || 'Failed to load incident.'))
             .finally(() => setLoading(false))
-    }, [id])
+    }, [incidentId])
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        setError('')
-        setSaving(true)
+        setError(''); setSaving(true)
         try {
-            await api.put(`/incidents/${id}`, {
+            await api.put(`/incidents/${incidentId}`, {
                 title:       form.title,
                 description: form.description,
                 severity:    Number(form.severity),
                 status:      form.status,
             })
-            navigate('/incidents')
+            onSaved?.()
+            onClose?.()
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update incident.')
         } finally {
@@ -70,166 +219,190 @@ function EditIncident() {
         }
     }
 
-    const sevNum = Number(form.severity)
+    const sevNum    = Number(form.severity)
+    const accent    = SEVERITY_ACCENT[sevNum] ?? SEVERITY_ACCENT[2]
+    const statusCfg = STATUS_CONFIG[form.status] ?? STATUS_CONFIG.open
 
-    // ── Backdrop wrapper (always rendered so Escape works) ──
+    if (!incidentId) return null
+
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }}
-            onClick={onClose}
-        >
+        <>
+            <style>{`
+                @keyframes edit-inc-in {
+                    from { opacity:0; transform:scale(0.97) translateY(8px); }
+                    to   { opacity:1; transform:scale(1)    translateY(0);   }
+                }
+                .edit-inc-panel { animation: edit-inc-in 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+            `}</style>
+
             <div
-                className="relative w-full max-w-xl rounded-2xl border border-[#1c2b2f] bg-[#0b0f12] flex flex-col max-h-[90vh]"
-                style={{ boxShadow: '0 0 0 1px #1c2b2f, 0 25px 60px rgba(0,0,0,0.7)' }}
-                onClick={e => e.stopPropagation()}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                onClick={onClose}
             >
-                {/* Top accent bar */}
-                <div className="h-1 w-full rounded-t-2xl shrink-0 bg-[#00A897]" />
+                <div
+                    className="edit-inc-panel relative w-full max-w-2xl flex flex-col overflow-hidden rounded-2xl"
+                    style={{
+                        background: 'linear-gradient(160deg, #0d1b2a 0%, #0a1520 100%)',
+                        border: '1px solid #1b263b',
+                        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+                        maxHeight: '92vh',
+                    }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <div
+                        className="h-0.5 w-full shrink-0 transition-all duration-300"
+                        style={{
+                            background: `linear-gradient(90deg, transparent, ${accent.bar}60, ${accent.bar}90, ${accent.bar}60, transparent)`,
+                        }}
+                    />
 
-                {/* ── Header ── */}
-                <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-[#1c2b2f] shrink-0">
-                    <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600">Incident</p>
-                        <h2 className="text-base font-bold text-white mt-0.5">Edit Incident</h2>
-                        {original && (
-                            <p className="text-[10px] text-slate-600 font-mono mt-0.5 truncate max-w-xs" title={original._id}>
-                                {original._id}
-                            </p>
-                        )}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#1c2b2f] text-slate-500 transition hover:border-[#275B66] hover:text-white"
-                        title="Close (Esc)"
-                    >
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                            <line x1="18" y1="6" x2="6" y2="18" />
-                            <line x1="6" y1="6" x2="18" y2="18" />
-                        </svg>
-                    </button>
-                </div>
-
-                {/* ── Read-only metadata pills ── */}
-                {original && (
-                    <div className="flex flex-wrap gap-2 px-6 pt-3 shrink-0">
-                        <span className="rounded-full border border-[#1c2b2f] bg-black/40 px-2.5 py-1 text-[10px] text-slate-500">
-                            Source: <span className={`font-semibold ${original.source === 'wazuh' ? 'text-[#00A897]' : 'text-slate-300'}`}>{original.source}</span>
-                        </span>
-                        {original.agent_name && (
-                            <span className="rounded-full border border-[#1c2b2f] bg-black/40 px-2.5 py-1 text-[10px] text-slate-500">
-                                Agent: <span className="font-mono text-slate-300">{original.agent_name}</span>
-                            </span>
-                        )}
-                        {original.rule_id && (
-                            <span className="rounded-full border border-[#1c2b2f] bg-black/40 px-2.5 py-1 text-[10px] text-slate-500">
-                                Rule: <span className="font-mono text-[#00A897]">#{original.rule_id}</span>
-                                {original.rule_level && <span className="text-slate-600"> (lv {original.rule_level})</span>}
-                            </span>
-                        )}
-                        <span className="rounded-full border border-[#1c2b2f] bg-black/40 px-2.5 py-1 text-[10px] text-slate-500">
-                            {fmt(original.timestamp)}
-                        </span>
-                    </div>
-                )}
-
-                {/* ── Scrollable body ── */}
-                <div className="overflow-y-auto flex-1 px-6 py-5">
-
-                    {/* Loading skeleton */}
-                    {loading && (
-                        <div className="space-y-4">
-                            {[...Array(4)].map((_, i) => (
-                                <div key={i} className="h-10 animate-pulse rounded-lg bg-white/5" />
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Error */}
-                    {error && !loading && (
-                        <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                            {error}
-                        </div>
-                    )}
-
-                    {!loading && (
-                        <form id="edit-incident-form" onSubmit={handleSubmit} className="space-y-5">
-
-                            <div>
-                                <label className={labelCls}>Title</label>
-                                <input name="title" className={inputCls} value={form.title} onChange={handleChange} required />
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-4 px-6 py-4 shrink-0"
+                         style={{ borderBottom: '1px solid #1b263b' }}>
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl mt-0.5"
+                                 style={{ background: accent.bg, border: `1px solid ${accent.border}` }}>
+                                <Siren size={16} style={{ color: accent.color }} />
                             </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#2d4a5a' }}>
+                                    Incident
+                                </p>
+                                <h2 className="text-sm font-semibold mt-0.5" style={{ color: '#f1f5f9' }}>
+                                    Edit Incident
+                                </h2>
 
-                            <div>
-                                <label className={labelCls}>Description</label>
-                                <textarea
-                                    name="description"
-                                    rows={4}
-                                    className={inputCls + ' resize-none'}
-                                    value={form.description}
-                                    onChange={handleChange}
-                                />
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                {/* Severity */}
-                                <div>
-                                    <label className={labelCls}>Severity</label>
-                                    <select name="severity" value={form.severity} onChange={handleChange} className={inputCls}>
-                                        {Object.entries(SEVERITY_LABELS).reverse().map(([num, label]) => (
-                                            <option key={num} value={num}>{label}</option>
-                                        ))}
-                                    </select>
-                                    <div className="mt-2 flex items-center gap-2">
-                                        <span className="text-[10px] text-slate-700">Preview:</span>
-                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${SEVERITY_BADGES[sevNum]}`}>
-                                            <span className={`h-1.5 w-1.5 rounded-full ${SEVERITY_DOTS[sevNum]}`} />
-                                            {SEVERITY_LABELS[sevNum]}
-                                        </span>
+                                {original && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <MetaPill label="Severity" value={SEVERITY_LABELS[original.severity] ?? original.severity} valueStyle={{ color: accent.color }} />
+                                        {original.source && (
+                                            <MetaPill label="Source" value={original.source} valueStyle={{ color: '#94a3b8' }} />
+                                        )}
+                                        <MetaPill label="Created" value={fmt(original.timestamp)} />
                                     </div>
-                                </div>
-
-                                {/* Status */}
-                                <div>
-                                    <label className={labelCls}>Status</label>
-                                    <select name="status" value={form.status} onChange={handleChange} className={inputCls}>
-                                        <option value="open">Open</option>
-                                        <option value="in_progress">In Progress</option>
-                                        <option value="resolved">Resolved</option>
-                                    </select>
-                                </div>
+                                )}
                             </div>
-                        </form>
-                    )}
-                </div>
+                        </div>
 
-                {/* ── Footer ── */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#1c2b2f] shrink-0">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg border border-[#1c2b2f] px-4 py-2 text-sm text-slate-400 transition hover:border-[#275B66] hover:text-white"
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            title="Close (Esc)"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-all duration-150"
+                            style={{ border: '1px solid #1b263b', color: '#4a7a8a' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#028090'; e.currentTarget.style.color = '#fff' }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#1b263b'; e.currentTarget.style.color = '#4a7a8a' }}
+                        >
+                            <X size={13} />
+                        </button>
+                    </div>
+
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                        {loading && <SkeletonForm />}
+
+                        {error && !loading && (
+                            <div
+                                className="flex items-start gap-3 rounded-xl px-4 py-3 mb-5"
+                                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+                            >
+                                <AlertCircle size={14} className="shrink-0 mt-0.5" style={{ color: '#f87171' }} />
+                                <p className="text-sm" style={{ color: '#f87171' }}>{error}</p>
+                            </div>
+                        )}
+
+                        {!loading && (
+                            <form id="edit-incident-form" onSubmit={handleSubmit} className="space-y-5">
+                                <Field label="Title" required>
+                                    <StyledInput
+                                        name="title"
+                                        value={form.title}
+                                        onChange={handleChange}
+                                        placeholder="Incident title…"
+                                        required
+                                    />
+                                </Field>
+
+                                <Field label="Description">
+                                    <StyledTextarea
+                                        name="description"
+                                        rows={4}
+                                        value={form.description}
+                                        onChange={handleChange}
+                                        placeholder="Describe what happened, affected systems, and initial findings…"
+                                    />
+                                </Field>
+
+                                <Field label="Severity" required hint="0 = Info · 1 = Low · 2 = Medium · 3 = High · 4 = Critical">
+                                    <SeverityPicker
+                                        value={form.severity}
+                                        onChange={val => setForm(f => ({ ...f, severity: val }))}
+                                    />
+                                </Field>
+
+                                <Field label="Status">
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.entries(STATUS_CONFIG).map(([val, cfg]) => {
+                                            const isSelected = form.status === val
+                                            return (
+                                                <button
+                                                    key={val}
+                                                    type="button"
+                                                    onClick={() => setForm(f => ({ ...f, status: val }))}
+                                                    className="rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150"
+                                                    style={{
+                                                        background: isSelected ? cfg.bg : 'rgba(27,38,59,0.4)',
+                                                        border:     isSelected ? `1px solid ${cfg.border}` : '1px solid #1b263b',
+                                                        color:      isSelected ? cfg.color : '#4a7a8a',
+                                                    }}
+                                                >
+                                                    {cfg.label}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </Field>
+                            </form>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div
+                        className="flex items-center justify-end gap-3 px-6 py-4 shrink-0"
+                        style={{ borderTop: '1px solid #1b263b', background: 'rgba(6,14,22,0.4)' }}
                     >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        form="edit-incident-form"
-                        disabled={saving || loading}
-                        className="rounded-lg bg-[#00A897] px-5 py-2 text-sm font-bold text-black transition hover:bg-[#00c4b1] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {saving ? (
-                            <span className="flex items-center gap-2">
-                                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black border-t-transparent" />
-                                Saving…
-                            </span>
-                        ) : 'Save Changes'}
-                    </button>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all duration-150"
+                            style={{ background: 'transparent', border: '1px solid rgba(2,128,144,0.3)', color: '#028090' }}
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            type="submit"
+                            form="edit-incident-form"
+                            disabled={saving || loading}
+                            className="flex items-center gap-2 rounded-xl px-5 py-2 text-xs font-bold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ background: '#02c39a', color: '#0d1b2a' }}
+                        >
+                            {saving ? (
+                                <>
+                                    <Loader2 size={13} className="animate-spin" />
+                                    Saving…
+                                </>
+                            ) : (
+                                <>
+                                    <Save size={13} />
+                                    Save Changes
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     )
 }
 

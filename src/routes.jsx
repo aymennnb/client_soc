@@ -20,6 +20,8 @@ import Incidents            from './incidents/Incidents.jsx'
 import AddIncident          from './incidents/Addincident.jsx'
 import EditIncident         from './incidents/Editincident.jsx'
 
+import Tickets         from './tickets/Tickets.jsx'
+
 import Dashboard            from './Dashboard.jsx'
 
 function AdminRoute({ children }) {
@@ -66,6 +68,8 @@ function AppRoutes() {
                     <Route path="/incidents" element={<Incidents />} />
                     <Route path="/incidents/add" element={<AddIncident />} />
                     <Route path="/incidents/edit/:id" element={<EditIncident />} />
+
+                    <Route path="/tickets" element={<Tickets />} />
 
                     {/* Users — Admin only */}
                     <Route path="/users" element={

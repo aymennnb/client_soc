@@ -99,7 +99,7 @@ function Settings() {
                         <div className="rounded-lg border border-[#1c2b2f] bg-[#0a1215]/50 px-3 py-2.5 text-sm text-slate-400 cursor-not-allowed opacity-60">
                             {username || '—'}
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-600">Managed by Keycloak. Contact admin to change.</p>
+                        <p className="mt-1 text-[11px] text-slate-600">Contact admin to change.</p>
                     </div>
 
                     <div>
@@ -107,57 +107,8 @@ function Settings() {
                         <div className="rounded-lg border border-[#1c2b2f] bg-[#0a1215]/50 px-3 py-2.5 text-sm text-slate-400 cursor-not-allowed opacity-60">
                             {email || '—'}
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-600">Managed by Keycloak. Contact admin to change.</p>
+                        <p className="mt-1 text-[11px] text-slate-600">Contact admin to change.</p>
                     </div>
-                </div>
-            </Card>
-
-            {/* ── Application Profile ── */}
-            <Card title="Application Profile" subtitle="Your department and preferences">
-                {profileLoading ? (
-                    <div className="space-y-3">
-                        {[...Array(2)].map((_, i) => <div key={i} className="h-10 animate-pulse rounded-lg bg-white/5" />)}
-                    </div>
-                ) : (
-                    <>
-                        <Flash msg={flashProfile} />
-                        <form onSubmit={handleSaveProfile} className="space-y-4">
-
-                            <div>
-                                <label className={labelCls}>Department</label>
-                                <input
-                                    className={inputCls}
-                                    placeholder="e.g., Security Operations"
-                                    value={department}
-                                    onChange={e => setDepartment(e.target.value)}
-                                    autoComplete="off"
-                                />
-                                <p className="mt-1 text-[11px] text-slate-600">Optional: helps organize your profile</p>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <button
-                                    type="submit"
-                                    disabled={savingProfile}
-                                    className="rounded-lg bg-[#00A897] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#00c4b1] disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {savingProfile ? 'Saving…' : 'Save Profile'}
-                                </button>
-                            </div>
-                        </form>
-                    </>
-                )}
-            </Card>
-
-            {/* ── Password Management ── */}
-            <Card title="Password" subtitle="Password changes are managed by Keycloak">
-                <div className="space-y-3 text-sm text-slate-400">
-                    <p>
-                        To change your password, please use the Keycloak account portal or contact your administrator.
-                    </p>
-                    <p className="text-xs text-slate-600">
-                        Passwords are securely managed by Keycloak and cannot be changed from this application.
-                    </p>
                 </div>
             </Card>
 

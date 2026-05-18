@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useKeycloak } from '../context/KeycloakContext'
+import { Sun, Moon, Shield, KeyRound, Loader2, AlertCircle } from 'lucide-react'
+
+// ─── Theme helpers ────────────────────────────────────────────────────────────
 
 const getInitialTheme = () => localStorage.getItem('theme') || 'dark'
 const applyTheme = (theme) => {
@@ -7,157 +10,273 @@ const applyTheme = (theme) => {
     localStorage.setItem('theme', theme)
 }
 
-function SunIcon() {
+// ─── Ambient background orbs ──────────────────────────────────────────────────
+
+function AmbientOrbs({ isDark }) {
+    if (!isDark) return null
     return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1"  x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22"   x2="5.64"  y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1"  y1="12" x2="3"  y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64"  y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
+        <>
+            <div
+                className="pointer-events-none fixed"
+                style={{
+                    top: '-20vh', left: '-10vw',
+                    width: '60vw', height: '60vw',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(2,128,144,0.07) 0%, transparent 70%)',
+                    filter: 'blur(40px)',
+                }}
+            />
+            <div
+                className="pointer-events-none fixed"
+                style={{
+                    bottom: '-15vh', right: '-10vw',
+                    width: '50vw', height: '50vw',
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(2,195,154,0.05) 0%, transparent 70%)',
+                    filter: 'blur(40px)',
+                }}
+            />
+        </>
     )
 }
 
-function MoonIcon() {
-    return (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-        </svg>
-    )
-}
-
-function ShieldIcon() {
-    return (
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-    )
-}
+// ─── Main component ───────────────────────────────────────────────────────────
 
 function Login() {
     const { keycloak, loading, isAuthenticated, error } = useKeycloak()
-    const [theme, setTheme] = useState(getInitialTheme)
+    const [theme, setTheme]         = useState(getInitialTheme)
     const [isLoggingIn, setIsLoggingIn] = useState(false)
 
     useEffect(() => { applyTheme(theme) }, [theme])
     const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
-
     const isDark = theme === 'dark'
 
-    // Gérer le clic sur le bouton de connexion
     const handleLogin = () => {
-        console.log('[Login] User clicked login button')
         setIsLoggingIn(true)
-
-        keycloak.login({
-            redirectUri: `${window.location.origin}/`,
-        }).catch((err) => {
-            console.error('[Login] Login failed:', err)
-            setIsLoggingIn(false)
-        })
+        keycloak.login({ redirectUri: `${window.location.origin}/` })
+            .catch(() => setIsLoggingIn(false))
     }
 
-    // Écran de chargement initial
+    // ── Token values ──
+    const surface = isDark
+        ? { background: 'rgba(13,27,42,0.8)', border: '1px solid #1b263b' }
+        : { background: '#fff', border: '1px solid #e2e8f0' }
+
+    const pageBg = isDark ? '#0d1b2a' : '#f8fafc'
+
+    // ── Initial loading screen ──
     if (loading) {
         return (
-            <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0b0f12]' : 'bg-slate-50'}`}>
-                <div className="text-center space-y-4">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#00A897] border-t-transparent mx-auto"/>
-                    <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                        Initializing authentication...
-                    </p>
+            <div className="flex min-h-screen items-center justify-center" style={{ background: pageBg }}>
+                <style>{`
+                    @keyframes spin-once { to { transform: rotate(360deg); } }
+                `}</style>
+                <div className="flex flex-col items-center gap-4">
+                    <div
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                        style={{ background: 'rgba(2,128,144,0.12)', border: '1px solid rgba(2,128,144,0.25)' }}
+                    >
+                        <Loader2 size={20} className="animate-spin" style={{ color: '#028090' }} />
+                    </div>
+                    <p className="text-sm" style={{ color: '#4a7a8a' }}>Initializing authentication…</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className={`min-h-screen flex flex-col ${isDark ? 'bg-[#0b0f12] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+        <>
+            <style>{`
+                @keyframes login-in {
+                    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+                    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+                }
+                .login-card { animation: login-in 0.45s cubic-bezier(0.16,1,0.3,1) both; }
 
-            {/* Top bar */}
-            <div className={`flex items-center justify-between px-6 py-4 border-b ${isDark ? 'border-[#1c2b2f] bg-black' : 'border-slate-200 bg-white'}`}>
-                <img src="/exia_logo.png" alt="EXIA Technologie Logo" className="h-6 w-auto object-contain"/>
-                <button
-                    onClick={toggleTheme}
-                    title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg border transition ${
-                        isDark
-                            ? 'border-[#1c2b2f] text-slate-400 hover:border-[#275B66] hover:text-[#00A897]'
-                            : 'border-slate-200 text-slate-500 hover:border-[#275B66] hover:text-[#00A897]'
-                    }`}>
-                    {isDark ? <SunIcon /> : <MoonIcon />}
-                </button>
-            </div>
+                @keyframes pulse-ring {
+                    0%   { transform: scale(1);    opacity: 0.4; }
+                    100% { transform: scale(1.5);  opacity: 0;   }
+                }
+                .pulse-ring { animation: pulse-ring 2.2s ease-out infinite; }
+            `}</style>
 
-            {/* Center */}
-            <div className="flex flex-1 items-center justify-center px-4 py-12">
-                <div className="w-full max-w-sm space-y-8">
+            <div
+                className="relative flex min-h-screen flex-col overflow-hidden"
+                style={{ background: pageBg, fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}
+            >
+                <AmbientOrbs isDark={isDark} />
 
-                    <div className="text-center space-y-2">
-                        <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            Sign in
-                        </h1>
-                        <p className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>
-                            Security Operations Center
-                        </p>
-                    </div>
-
-                    <div className={`rounded-xl border p-6 space-y-5 ${
-                        isDark ? 'border-[#1c2b2f] bg-black/60' : 'border-slate-200 bg-white shadow-sm'
-                    }`}>
-
-                        {/* Afficher les erreurs */}
-                        {error && (
-                            <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-                                <p className="font-semibold">Authentication Error</p>
-                                <p className="text-xs mt-1">{error}</p>
-                            </div>
-                        )}
-
-                        {/* Message d'info */}
-                        <p className={`text-sm text-center ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                            {isAuthenticated
-                                ? 'You are already signed in. Redirecting...'
-                                : 'Click below to sign in securely'}
-                        </p>
-
-                        {/* Bouton de connexion */}
-                        <button
-                            onClick={handleLogin}
-                            disabled={isLoggingIn || isAuthenticated}
-                            className={`w-full rounded-lg py-2.5 text-sm font-bold transition ${
-                                isLoggingIn || isAuthenticated
-                                    ? 'bg-slate-600 text-slate-300 cursor-not-allowed'
-                                    : 'bg-[#00A897] text-black hover:bg-[#00c4b1]'
-                            }`}
+                {/* ── Top bar ── */}
+                <header
+                    className="relative z-10 flex h-14 shrink-0 items-center justify-between px-6"
+                    style={{
+                        background: isDark ? 'rgba(10,21,32,0.9)' : 'rgba(255,255,255,0.9)',
+                        borderBottom: `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
+                        backdropFilter: 'blur(8px)',
+                    }}
+                >
+                    {/* Logo */}
+                    <div className="flex items-center gap-2.5">
+                        <div
+                            className="flex h-7 w-7 items-center justify-center rounded-lg"
+                            style={{ background: 'rgba(2,128,144,0.15)', border: '1px solid rgba(2,128,144,0.3)' }}
                         >
-                            {isLoggingIn ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <div className="h-4 w-4 animate-spin rounded-full border border-current border-t-transparent" />
-                                    Redirecting to Keycloak...
-                                </span>
-                            ) : isAuthenticated ? (
-                                'Already Signed In'
-                            ) : (
-                                'Sign in with Keycloak'
-                            )}
-                        </button>
+                            <div
+                                className="h-2.5 w-2.5 rounded-full"
+                                style={{ background: '#02c39a', boxShadow: '0 0 6px rgba(2,195,154,0.6)' }}
+                            />
+                        </div>
+                        <img
+                            src="/exia_logo.png"
+                            alt="EXIA"
+                            className="h-5 w-auto"
+                            style={{ filter: isDark ? 'brightness(0) invert(1)' : 'none', opacity: 0.9 }}
+                        />
                     </div>
 
-                    <p className={`text-center text-[11px] ${isDark ? 'text-slate-700' : 'text-slate-400'}`}>
-                        SOC App · Powered by Keycloak
-                    </p>
-                </div>
+                    {/* Theme toggle */}
+                    <button
+                        onClick={toggleTheme}
+                        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                        className="flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-150"
+                        style={{
+                            background: isDark ? 'rgba(27,38,59,0.8)' : '#fff',
+                            border: `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
+                            color: isDark ? '#4a7a8a' : '#64748b',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#028090'; e.currentTarget.style.color = isDark ? '#02c39a' : '#028090' }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.borderColor = isDark ? '#1b263b' : '#e2e8f0'
+                            e.currentTarget.style.color = isDark ? '#4a7a8a' : '#64748b'
+                        }}
+                    >
+                        {isDark ? <Sun size={15} /> : <Moon size={15} />}
+                    </button>
+                </header>
+
+                {/* ── Center content ── */}
+                <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
+                    <div className="login-card w-full max-w-sm">
+
+                        {/* ── Shield icon hero ── */}
+                        <div className="mb-8 flex flex-col items-center gap-4">
+
+                            <div className="text-center">
+                                <h1
+                                    className="text-2xl font-bold tracking-tight"
+                                    style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
+                                >
+                                    Security Operations
+                                </h1>
+                                <p className="mt-1 text-sm" style={{ color: isDark ? '#4a7a8a' : '#64748b' }}>
+                                    Sign in to access your SOC platform
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* ── Login card ── */}
+                        <div
+                            className="overflow-hidden rounded-2xl"
+                            style={{
+                                ...surface,
+                                boxShadow: isDark
+                                    ? '0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(27,38,59,0.8)'
+                                    : '0 24px 64px rgba(0,0,0,0.08)',
+                            }}
+                        >
+                            {/* Top accent gradient */}
+                            <div
+                                className="h-px w-full"
+                                style={{ background: 'linear-gradient(90deg, transparent, #028090, #02c39a, transparent)' }}
+                            />
+
+                            <div className="px-6 py-7 space-y-5">
+
+                                {/* Error banner */}
+                                {error && (
+                                    <div
+                                        className="flex items-start gap-3 rounded-xl px-4 py-3"
+                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
+                                    >
+                                        <AlertCircle size={15} className="shrink-0 mt-0.5" style={{ color: '#f87171' }} />
+                                        <div>
+                                            <p className="text-xs font-semibold" style={{ color: '#f87171' }}>Authentication Error</p>
+                                            <p className="mt-0.5 text-[11px]" style={{ color: '#fca5a5' }}>{error}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Status message */}
+                                <div
+                                    className="rounded-xl px-4 py-3 text-sm text-center"
+                                    style={{
+                                        background: isDark ? 'rgba(27,38,59,0.4)' : '#f8fafc',
+                                        border: `1px solid ${isDark ? '#1b263b' : '#f1f5f9'}`,
+                                        color: isDark ? '#94a3b8' : '#64748b',
+                                    }}
+                                >
+                                    {isAuthenticated
+                                        ? 'You are signed in — redirecting…'
+                                        : 'Your session will be authenticated via Keycloak SSO'}
+                                </div>
+
+                                {/* Sign in button */}
+                                <button
+                                    onClick={handleLogin}
+                                    disabled={isLoggingIn || isAuthenticated}
+                                    className="relative w-full overflow-hidden rounded-xl py-3 text-sm font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                    style={{
+                                        background: isLoggingIn || isAuthenticated
+                                            ? 'rgba(2,128,144,0.4)'
+                                            : 'linear-gradient(135deg, #028090 0%, #02c39a 100%)',
+                                        color: '#0d1b2a',
+                                    }}
+                                    onMouseEnter={e => {
+                                        if (!isLoggingIn && !isAuthenticated)
+                                            e.currentTarget.style.background = 'linear-gradient(135deg, #029aad 0%, #03d9ab 100%)'
+                                    }}
+                                    onMouseLeave={e => {
+                                        if (!isLoggingIn && !isAuthenticated)
+                                            e.currentTarget.style.background = 'linear-gradient(135deg, #028090 0%, #02c39a 100%)'
+                                    }}
+                                >
+                                    {/* Shimmer overlay on hover */}
+                                    <span className="relative z-10 flex items-center justify-center gap-2.5">
+                                        {isLoggingIn ? (
+                                            <>
+                                                <Loader2 size={15} className="animate-spin" />
+                                                Redirecting to Keycloak…
+                                            </>
+                                        ) : isAuthenticated ? (
+                                            'Already Signed In'
+                                        ) : (
+                                            <>
+                                                <KeyRound size={15} />
+                                                Sign in with Keycloak
+                                            </>
+                                        )}
+                                    </span>
+                                </button>
+
+                                {/* Provider info */}
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="h-px flex-1" style={{ background: isDark ? '#1b263b' : '#f1f5f9' }} />
+                                    <span className="text-[10px] font-medium" style={{ color: isDark ? '#2d4a5a' : '#cbd5e1' }}>
+                                        secured by keycloak
+                                    </span>
+                                    <div className="h-px flex-1" style={{ background: isDark ? '#1b263b' : '#f1f5f9' }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Footer meta ── */}
+                        <p className="mt-6 text-center text-[10px]" style={{ color: isDark ? '#1b263b' : '#cbd5e1' }}>
+                            EXIA SOC Platform · All rights reserved
+                        </p>
+                    </div>
+                </main>
             </div>
-        </div>
+        </>
     )
 }
 
