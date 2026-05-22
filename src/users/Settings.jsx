@@ -340,45 +340,6 @@ function Settings() {
                     </div>
                 </Card>
 
-                {/* ── Profile ── */}
-                <Card title="Profile" subtitle="Additional information about your account" tk={tk}>
-                    {profileLoading ? (
-                        <div className="space-y-4">
-                            {[...Array(1)].map((_, i) => (
-                                <div key={i} className="space-y-1.5">
-                                    <div className="h-2.5 w-24 rounded-md animate-pulse" style={{ background: isDark ? 'rgba(27,38,59,0.7)' : 'rgba(203,213,225,0.6)' }} />
-                                    <div className="h-10 rounded-lg animate-pulse"         style={{ background: isDark ? 'rgba(27,38,59,0.5)' : 'rgba(203,213,225,0.4)' }} />
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <form onSubmit={handleSaveProfile} className="space-y-4">
-                            <div>
-                                <label style={labelStyle}>Department</label>
-                                <input
-                                    className="stt-input"
-                                    style={inputStyle}
-                                    placeholder="e.g. Security Operations"
-                                    value={department}
-                                    onChange={e => setDepartment(e.target.value)}
-                                />
-                            </div>
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={savingProfile}
-                                    className="rounded-lg px-4 py-2 text-xs font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    style={{ background: '#02c39a', color: '#0d1b2a' }}
-                                    onMouseEnter={e => { if (!savingProfile) e.currentTarget.style.background = '#02e0b1' }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = '#02c39a' }}
-                                >
-                                    {savingProfile ? 'Saving…' : 'Save Profile'}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-                </Card>
-
                 {/* ── Appearance ── */}
                 <Card title="Appearance" subtitle="Choose how the interface looks for you" tk={tk}>
                     <div>

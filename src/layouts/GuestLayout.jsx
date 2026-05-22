@@ -1,5 +1,5 @@
 import { Outlet, Navigate } from 'react-router-dom'
-import { useKeycloak } from '../context/KeycloakContext'
+import { useKeycloak } from '../context/AuthContext'
 
 function GuestLayout() {
     const { isAuthenticated, loading } = useKeycloak()

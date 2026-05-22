@@ -1,208 +1,232 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useState, useEffect, useMemo } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
+import { ChevronLeft, Shield, Check, X, Save, RefreshCcw } from 'lucide-react'
 
-const groupPermissions = (perms) => {
-    const groups = {}
-    perms.forEach(p => {
-        const parts = p.permission_name.split('_')
-        const group = parts.length > 1 ? parts.slice(0, -1).join('_') : 'OTHER'
-        if (!groups[group]) groups[group] = []
-        groups[group].push(p)
+const ASSIGNABLE_PERMISSIONS = [
+    { group: 'Tickets',         perms: ['VIEW_TICKETS', 'CREATE_TICKET', 'UPDATE_TICKET', 'DELETE_TICKET'] },
+    { group: 'Vulnerabilities', perms: ['VIEW_VULNERABILITIES', 'VIEW_VULNERABILITY_DETAILS', 'CREATE_VULNERABILITY', 'UPDATE_VULNERABILITY', 'DELETE_VULNERABILITY', 'SYNC_VULNERABILITIES', 'LAUNCH_VULNERABILITY_SCAN'] },
+    { group: 'Incidents',       perms: ['VIEW_INCIDENTS', 'CREATE_INCIDENT', 'UPDATE_INCIDENT', 'DELETE_INCIDENT', 'SYNC_INCIDENTS'] },
+]
+
+function useTheme() {
+    const [isDark, setIsDark] = useState(() => {
+        const attr = document.documentElement.getAttribute('data-theme')
+        if (attr) return attr !== 'light'
+        return !window.matchMedia('(prefers-color-scheme: light)').matches
     })
-    return Object.fromEntries(
-        Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
-    )
+    useEffect(() => {
+        const mo = new MutationObserver(() => {
+            const attr = document.documentElement.getAttribute('data-theme')
+            setIsDark(attr ? attr !== 'light' : !window.matchMedia('(prefers-color-scheme: light)').matches)
+        })
+        mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+        return () => mo.disconnect()
+    }, [])
+    return isDark
 }
 
 function UserPermissions() {
-    const navigate = useNavigate()
-    const { id }   = useParams()
+    const { id }    = useParams()
+    const navigate  = useNavigate()
+    const isDark    = useTheme()
 
-    const [username,       setUsername]       = useState('')
-    const [allPermissions, setAllPermissions] = useState([])
-    const [assignedIds,    setAssignedIds]    = useState([])
-    const [loading,  setLoading]  = useState(true)
-    const [saving,   setSaving]   = useState(false)
-    const [error,    setError]    = useState('')
-    const [flash,    setFlash]    = useState(null)
+    const tk = useMemo(() => ({
+        bgPage:      isDark ? '#0d1b2a'               : '#f8fafc',
+        bgCard:      isDark ? 'rgba(13,27,42,0.7)'    : 'rgba(255,255,255,0.97)',
+        bgThead:     isDark ? 'rgba(6,14,22,0.8)'     : 'rgba(248,250,252,0.95)',
+        bgAction:    isDark ? 'rgba(2,128,144,0.12)'  : 'rgba(2,128,144,0.07)',
+        bgActionHov: isDark ? 'rgba(2,128,144,0.18)'  : 'rgba(2,128,144,0.13)',
+        bgDanger:    isDark ? 'rgba(239,68,68,0.08)'  : 'rgba(220,38,38,0.06)',
+        bgSuccess:   isDark ? 'rgba(34,197,94,0.08)'  : 'rgba(22,163,74,0.06)',
+        border:      isDark ? '#1b263b'               : '#e2e8f0',
+        borderAction:isDark ? 'rgba(2,128,144,0.3)'   : 'rgba(2,128,144,0.35)',
+        borderDanger:isDark ? 'rgba(239,68,68,0.2)'   : 'rgba(220,38,38,0.22)',
+        textPrimary: isDark ? '#f1f5f9'               : '#0f172a',
+        textMuted:   isDark ? '#94a3b8'               : '#475569',
+        textFaint:   isDark ? '#4a7a8a'               : '#64748b',
+        textAction:  isDark ? '#028090'               : '#0369a1',
+        textDanger:  isDark ? '#f87171'               : '#dc2626',
+        bgSkeleton:  isDark ? 'rgba(27,38,59,0.8)'    : 'rgba(203,213,225,0.6)',
+    }), [isDark])
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // 1. Get user info (Keycloak)
-                const userRes = await api.get(`/users/${id}`)
-                setUsername(userRes.data.username)
+    const [user,        setUser]        = useState(null)
+    const [current,     setCurrent]     = useState([])   // permissions actuelles
+    const [selected,    setSelected]    = useState([])   // état local modifiable
+    const [loading,     setLoading]     = useState(true)
+    const [saving,      setSaving]      = useState(false)
+    const [error,       setError]       = useState('')
+    const [successMsg,  setSuccessMsg]  = useState('')
 
-                // 2. Get user permissions (MongoDB)
-                const permRes = await api.get(`/users/${id}/permissions`)
-                setAssignedIds(permRes.data.permissions.map(p => p.permission_id))
-
-                // 3. Get all available permissions
-                const allRes = await api.get('/users/permissions')
-                setAllPermissions(allRes.data.permissions)
-            } catch (err) {
-                const msg = err.response?.data?.message || 'Failed to load data.'
-                setError(msg)
-                console.error('[UserPermissions]', err)
-            } finally {
-                setLoading(false)
-            }
+    const fetchData = async () => {
+        setLoading(true); setError('')
+        try {
+            const [userRes, permsRes] = await Promise.all([
+                api.get(`/users/${id}`),
+                api.get(`/users/${id}/permissions`),
+            ])
+            setUser(userRes.data)
+            setCurrent(permsRes.data.permissions || [])
+            setSelected(permsRes.data.permissions || [])
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to load user permissions.')
+        } finally {
+            setLoading(false)
         }
-        fetchData()
-    }, [id])
-
-    const showFlash = (type, msg) => {
-        setFlash({ type, msg })
-        setTimeout(() => setFlash(null), 2500)
     }
 
-    const handleToggle = async (permission_id) => {
-        setSaving(true)
-        setError('')
-        const isAssigned = assignedIds.includes(permission_id)
+    useEffect(() => { fetchData() }, [id])
+
+    const toggle = (perm) => {
+        setSelected(prev =>
+            prev.includes(perm) ? prev.filter(p => p !== perm) : [...prev, perm]
+        )
+    }
+
+    const isDirty = useMemo(() => {
+        const a = [...selected].sort().join(',')
+        const b = [...current].sort().join(',')
+        return a !== b
+    }, [selected, current])
+
+    const handleSave = async () => {
+        setSaving(true); setError(''); setSuccessMsg('')
         try {
-            if (isAssigned) {
-                await api.delete(`/users/${id}/permissions/${permission_id}`)
-                setAssignedIds(prev => prev.filter(pid => pid !== permission_id))
-                showFlash('success', 'Permission removed.')
-            } else {
-                await api.post(`/users/${id}/permissions`, { permission_id })
-                setAssignedIds(prev => [...prev, permission_id])
-                showFlash('success', 'Permission assigned.')
-            }
+            await api.post(`/users/${id}/permissions/sync`, { permissions: selected })
+            setCurrent(selected)
+            setSuccessMsg('Permissions saved successfully.')
+            setTimeout(() => setSuccessMsg(''), 3000)
         } catch (err) {
-            const msg = err.response?.data?.message || 'Operation failed.'
-            setError(msg)
-            showFlash('error', msg)
+            setError(err.response?.data?.message || 'Failed to save permissions.')
         } finally {
             setSaving(false)
         }
     }
 
     if (loading) return (
-        <div className="space-y-4 text-slate-100">
-            <div className="h-8 w-48 animate-pulse rounded-lg bg-white/5" />
-            <div className="rounded-xl border border-[#1c2b2f] bg-black/60 p-6 space-y-3">
-                {[...Array(6)].map((_, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                        <div className="h-3 w-1/2 animate-pulse rounded bg-white/5" />
-                        <div className="h-5 w-9 animate-pulse rounded-full bg-white/5" />
-                    </div>
-                ))}
-            </div>
+        <div className="space-y-4 p-6">
+            {[1,2,3].map(i => (
+                <div key={i} className="h-10 rounded-xl animate-pulse" style={{ background: tk.bgSkeleton }} />
+            ))}
         </div>
     )
 
-    const groups = groupPermissions(allPermissions)
-    const assignedCount = assignedIds.length
-    const totalCount = allPermissions.length
-
     return (
-        <div className="space-y-6 text-slate-100">
+        <div className="space-y-6" style={{ color: tk.textMuted }}>
 
             {/* Header */}
-            <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/users')}
-                        className="flex items-center gap-1.5 rounded-lg border border-[#1c2b2f] px-3 py-1.5 text-xs text-slate-400 transition hover:border-[#275B66] hover:text-[#00A897]"
-                    >
-                        ← Back
+            <div className="flex flex-wrap items-center justify-between gap-4"
+                style={{ borderBottom: `1px solid ${tk.border}`, paddingBottom: '20px' }}>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate('/users')}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all"
+                        style={{ background: 'transparent', border: `1px solid ${tk.border}`, color: tk.textFaint }}
+                        onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, borderColor: 'rgba(2,128,144,0.35)', color: '#02c39a' })}
+                        onMouseLeave={e => Object.assign(e.currentTarget.style, { background: 'transparent', borderColor: tk.border, color: tk.textFaint })}>
+                        <ChevronLeft size={14} />
                     </button>
                     <div>
-                        <h2 className="text-xl font-bold tracking-tight text-white">Fine-Grained Permissions</h2>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                            Account: <span className="font-mono text-[#00A897]">{username}</span>
+                        <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2"
+                            style={{ color: tk.textPrimary }}>
+                            Permissions — {user?.username ?? id}
+                        </h2>
+                        <p className="mt-0.5 text-[11px]" style={{ color: tk.textFaint }}>
+                            {user?.email ?? ''}
                         </p>
                     </div>
                 </div>
 
-                {/* Summary pill */}
-                <div className="flex items-center gap-2 rounded-lg border border-[#1c2b2f] bg-black/60 px-4 py-2">
-                    <span className="text-xs text-slate-500">Assigned:</span>
-                    <span className="text-sm font-bold text-[#00A897]">{assignedCount}</span>
-                    <span className="text-xs text-slate-600">/ {totalCount}</span>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => { setSelected(current); setError('') }}
+                        disabled={!isDirty || saving}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all"
+                        style={{
+                            background:  isDirty ? tk.bgDanger    : 'transparent',
+                            border:      `1px solid ${isDirty ? tk.borderDanger : tk.border}`,
+                            color:       isDirty ? tk.textDanger  : tk.textFaint,
+                            opacity:     (!isDirty || saving) ? 0.5 : 1,
+                            cursor:      (!isDirty || saving) ? 'not-allowed' : 'pointer',
+                        }}>
+                        <X size={13} /> Reset
+                    </button>
+                    <button onClick={handleSave}
+                        disabled={!isDirty || saving}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all"
+                        style={{
+                            background: isDirty ? '#02c39a' : tk.bgAction,
+                            color:      isDirty ? '#0d1b2a' : tk.textFaint,
+                            opacity:    (!isDirty || saving) ? 0.5 : 1,
+                            cursor:     (!isDirty || saving) ? 'not-allowed' : 'pointer',
+                        }}
+                        onMouseEnter={e => isDirty && !saving && (e.currentTarget.style.background = '#02e0b1')}
+                        onMouseLeave={e => isDirty && !saving && (e.currentTarget.style.background = '#02c39a')}>
+                        {saving
+                            ? <RefreshCcw size={13} className="animate-spin" />
+                            : <Save size={13} />}
+                        Save
+                    </button>
                 </div>
             </div>
 
-            {/* Flash message */}
-            {flash && (
-                <div className={`rounded-lg border px-4 py-3 text-sm transition-all ${
-                    flash.type === 'success'
-                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                        : 'border-red-500/30 bg-red-500/10 text-red-300'
-                }`}>
-                    {flash.msg}
-                </div>
-            )}
-
+            {/* Feedback */}
             {error && (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div className="rounded-xl px-4 py-3 text-sm"
+                    style={{ background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger }}>
                     {error}
                 </div>
             )}
-
-            {allPermissions.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 rounded-xl border border-[#1c2b2f] bg-black/40 py-16 text-center">
-                    <p className="text-sm text-slate-500">No permissions defined in the system.</p>
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {Object.entries(groups).map(([group, perms]) => (
-                        <div key={group} className="rounded-xl border border-[#1c2b2f] bg-black/60 overflow-hidden">
-                            {/* Group header */}
-                            <div className="flex items-center justify-between border-b border-[#1c2b2f] bg-[#080f12] px-4 py-2.5">
-                                <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-                                    {group.replace(/_/g, ' ')}
-                                </span>
-                                <span className="text-[10px] text-slate-600">
-                                    {perms.filter(p => assignedIds.includes(p.permission_id)).length}/{perms.length}
-                                </span>
-                            </div>
-
-                            {/* Permissions list */}
-                            <div className="divide-y divide-[#0e1a1e]">
-                                {perms.map(perm => {
-                                    const isAssigned = assignedIds.includes(perm.permission_id)
-                                    return (
-                                        <div
-                                            key={perm.permission_id}
-                                            className={`flex items-center justify-between px-4 py-3 transition-colors ${isAssigned ? 'bg-[#00A897]/5' : 'hover:bg-white/[0.02]'}`}
-                                        >
-                                            <div className="flex flex-col gap-0.5 flex-1">
-                                                <span className={`font-mono text-xs ${isAssigned ? 'text-slate-200' : 'text-slate-500'}`}>
-                                                    {perm.permission_name}
-                                                </span>
-                                                {perm.description && (
-                                                    <span className="text-[10px] text-slate-600">{perm.description}</span>
-                                                )}
-                                            </div>
-
-                                            {/* Toggle */}
-                                            <button
-                                                type="button"
-                                                disabled={saving}
-                                                onClick={() => handleToggle(perm.permission_id)}
-                                                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed ml-3 ${
-                                                    isAssigned
-                                                        ? 'border-[#00A897] bg-[#00A897]'
-                                                        : 'border-slate-700 bg-slate-800'
-                                                }`}
-                                                aria-label={`Toggle ${perm.permission_name}`}
-                                            >
-                                                <span
-                                                    className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${isAssigned ? 'translate-x-4' : 'translate-x-0'}`}
-                                                />
-                                            </button>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    ))}
+            {successMsg && (
+                <div className="rounded-xl px-4 py-3 text-sm"
+                    style={{ background: tk.bgSuccess, border: '1px solid rgba(34,197,94,0.28)', color: '#4ade80' }}>
+                    {successMsg}
                 </div>
             )}
+
+            {/* Unsaved changes notice */}
+            {isDirty && (
+                <div className="rounded-xl px-4 py-2 text-xs font-medium"
+                    style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#fbbf24' }}>
+                    You have unsaved changes — click Save to apply.
+                </div>
+            )}
+
+            {/* Permission groups */}
+            {ASSIGNABLE_PERMISSIONS.map(({ group, perms }) => (
+                <div key={group} className="rounded-xl overflow-hidden"
+                    style={{ background: tk.bgCard, border: `1px solid ${tk.border}` }}>
+                    <div className="px-5 py-3"
+                        style={{ background: tk.bgThead, borderBottom: `1px solid ${tk.border}` }}>
+                        <span className="text-[11px] font-semibold uppercase tracking-widest"
+                            style={{ color: tk.textFaint }}>
+                            {group}
+                        </span>
+                    </div>
+                    <div className="divide-y" style={{ '--tw-divide-opacity': 1 }}>
+                        {perms.map(perm => {
+                            const active = selected.includes(perm)
+                            return (
+                                <div key={perm}
+                                    className="flex items-center justify-between px-5 py-3 cursor-pointer transition-colors"
+                                    style={{ borderBottom: `1px solid ${tk.border}` }}
+                                    onClick={() => toggle(perm)}
+                                    onMouseEnter={e => e.currentTarget.style.background = isDark ? 'rgba(2,128,144,0.05)' : 'rgba(2,128,144,0.03)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <span className="text-sm font-mono" style={{ color: active ? tk.textPrimary : tk.textFaint }}>
+                                        {perm}
+                                    </span>
+                                    <div className="flex h-6 w-6 items-center justify-center rounded-md transition-all"
+                                        style={{
+                                            background: active ? '#02c39a'     : 'transparent',
+                                            border:     active ? 'none'         : `2px solid ${tk.border}`,
+                                        }}>
+                                        {active && <Check size={13} color="#0d1b2a" strokeWidth={3} />}
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            ))}
         </div>
     )
 }

@@ -1,31 +1,41 @@
+/**
+ * AuthenticatedLayout.jsx
+ * ─────────────────────────────────────────────────────────────────────────────
+ * CHANGEMENTS :
+ *   ✗ SUPPRIMÉ  — import { useKeycloak } from '../context/KeycloakContext'
+ *   ✗ SUPPRIMÉ  — keycloak.logout({ redirectUri }) dans UserMenu
+ *   ✓ REMPLACÉ  — import { useAuth }    from '../context/AuthContext'
+ *   ✓ REMPLACÉ  — handleLogout() appelle auth.logout() + navigate('/login')
+ *   ✓ CONSERVÉ  — tout le reste : UI, thème, sidebar, fullscreen, etc.
+ */
+
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useKeycloak } from '../context/KeycloakContext'
+import { useAuth } from '../context/AuthContext'   // ← SEUL CHANGEMENT D'IMPORT
 import Nav from './Nav'
 import {
     Sun, Moon, LogOut, Menu,
-    ChevronDown, User, Settings,
-    Maximize2, Minimize2, Bell,
+    ChevronDown, User,
+    Maximize2, Minimize2,
 } from 'lucide-react'
 
 const getInitialTheme = () => localStorage.getItem('theme') || 'dark'
 
 const applyTheme = (theme) => {
-    // Single canonical signal: data-theme attribute on <html>
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
 }
 
-// Apply immediately so data-theme is present before any child renders
 applyTheme(getInitialTheme())
 
 // ─── User Dropdown ────────────────────────────────────────────────────────────
 
-function UserMenu({ username, keycloak, theme }) {
+function UserMenu({ username, theme }) {
     const [open, setOpen] = useState(false)
-    const ref = useRef(null)
-    const navigate = useNavigate()
-    const initials = username.slice(0, 2).toUpperCase()
+    const ref             = useRef(null)
+    const navigate        = useNavigate()
+    const { logout }      = useAuth()                 // ← logout depuis AuthContext
+    const initials        = username.slice(0, 2).toUpperCase()
 
     useEffect(() => {
         const handler = (e) => {
@@ -35,15 +45,16 @@ function UserMenu({ username, keycloak, theme }) {
         return () => document.removeEventListener('mousedown', handler)
     }, [])
 
-    const handleLogout = () => {
-        keycloak.logout({ redirectUri: `${window.location.origin}/login` })
+    // ── CHANGEMENT : plus de keycloak.logout(), on appelle le backend ─────────
+    const handleLogout = async () => {
+        await logout()
+        navigate('/login', { replace: true })
     }
 
     const isDark = theme === 'dark'
 
     return (
         <div className="relative" ref={ref}>
-            {/* Trigger button */}
             <button
                 onClick={() => setOpen(o => !o)}
                 className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all duration-150"
@@ -55,7 +66,6 @@ function UserMenu({ username, keycloak, theme }) {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#028090' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = isDark ? '#1b263b' : '#e2e8f0' }}
             >
-                {/* Avatar */}
                 <div
                     className="flex h-6 w-6 items-center justify-center rounded-lg text-[9px] font-bold text-white"
                     style={{ background: 'linear-gradient(135deg, #028090, #02c39a)' }}
@@ -78,7 +88,6 @@ function UserMenu({ username, keycloak, theme }) {
                 />
             </button>
 
-            {/* Dropdown */}
             {open && (
                 <div
                     className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl"
@@ -98,7 +107,6 @@ function UserMenu({ username, keycloak, theme }) {
                         }
                     `}</style>
 
-                    {/* User info */}
                     <div
                         className="px-4 py-3"
                         style={{ borderBottom: `1px solid ${isDark ? '#1b263b' : '#f1f5f9'}` }}
@@ -124,7 +132,6 @@ function UserMenu({ username, keycloak, theme }) {
                         </div>
                     </div>
 
-                    {/* Menu items */}
                     <div className="p-1.5 space-y-0.5">
                         {[
                             {
@@ -172,9 +179,9 @@ function UserMenu({ username, keycloak, theme }) {
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
-    const { keycloak, userInfo } = useKeycloak()
-    const location = useLocation()
-    const username = userInfo?.username || 'User'
+    const { userInfo }    = useAuth()               // ← useAuth au lieu de useKeycloak
+    const location        = useLocation()
+    const username        = userInfo?.username || 'User'
     const [isFullscreen, setIsFullscreen] = useState(false)
     const isDark = theme === 'dark'
 
@@ -224,7 +231,6 @@ function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
                 borderBottom: `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
             }}
         >
-            {/* Menu toggle */}
             <button
                 onClick={onMenuToggle}
                 className="flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-150"
@@ -232,12 +238,10 @@ function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
                 onMouseEnter={controlHover}
                 onMouseLeave={controlLeave}
                 title={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-                aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
             >
                 <Menu size={15} />
             </button>
 
-            {/* Page breadcrumb */}
             <div className="flex items-center gap-2 min-w-0">
                 <span
                     className="text-xs font-semibold hidden sm:block"
@@ -261,10 +265,7 @@ function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
 
             <div className="flex-1" />
 
-            {/* Right controls */}
             <div className="flex items-center gap-2">
-
-                {/* Theme toggle */}
                 <button
                     onClick={toggleTheme}
                     className="h-8 w-8 flex items-center justify-center rounded-xl transition-all duration-150"
@@ -276,7 +277,6 @@ function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
                     {isDark ? <Sun size={15} /> : <Moon size={15} />}
                 </button>
 
-                {/* Fullscreen */}
                 <button
                     onClick={toggleFullscreen}
                     className="h-8 w-8 flex items-center justify-center rounded-xl transition-all duration-150"
@@ -288,31 +288,25 @@ function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
                     {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
                 </button>
 
-                {/* User menu */}
-                <UserMenu username={username} keycloak={keycloak} theme={theme} />
+                {/* ── CHANGEMENT : suppression prop keycloak, logout géré en interne ── */}
+                <UserMenu username={username} theme={theme} />
             </div>
         </header>
     )
 }
 
-// ─── Authenticated Layout ─────────────────────────────────────────────────────
+// ─── Authenticated Layout (inchangé) ─────────────────────────────────────────
 
 export default function AuthenticatedLayout() {
-    const [theme, setTheme] = useState(getInitialTheme)
+    const [theme,       setTheme]       = useState(getInitialTheme)
     const [sidebarOpen, setSidebarOpen] = useState(true)
 
-    // FIX: applyTheme now writes data-theme, so this effect correctly notifies
-    // Dashboard.useTheme()'s MutationObserver on every toggle.
     useEffect(() => { applyTheme(theme) }, [theme])
 
-    // FIX: listen for theme changes dispatched by Settings.jsx ThemeSelector.
-    // Settings writes localStorage + data-theme directly (to avoid a second
-    // React state owner), then fires a StorageEvent so this component stays
-    // in sync — header icon, page background, and all inline styles update.
     useEffect(() => {
         const handler = (e) => {
             if (e.key !== 'theme' || !e.newValue) return
-            const intent = e.newValue // 'light' | 'dark' | 'system'
+            const intent   = e.newValue
             const resolved = intent === 'system'
                 ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
                 : intent
@@ -336,15 +330,12 @@ export default function AuthenticatedLayout() {
                 fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
             }}
         >
-            {/* ── Sidebar / Nav ── */}
             <Nav open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-            {/* ── Main area ── */}
             <div
                 className="flex flex-1 flex-col overflow-hidden"
                 style={{ paddingLeft: sidebarOpen ? '240px' : '0', transition: 'padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}
             >
-                {/* Header */}
                 <Header
                     theme={theme}
                     toggleTheme={toggleTheme}
@@ -352,7 +343,6 @@ export default function AuthenticatedLayout() {
                     isSidebarOpen={sidebarOpen}
                 />
 
-                {/* Page content */}
                 <main
                     className="flex-1 overflow-y-auto"
                     style={{ background: isDark ? '#0d1b2a' : '#f8fafc' }}

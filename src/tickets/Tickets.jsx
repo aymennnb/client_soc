@@ -3,13 +3,12 @@ import { useAuth }        from '../hooks/useAuth'
 import { usePermissions } from '../hooks/useAuth'
 import api         from '../api'
 import DeleteModal from '../componants/DeleteModal'
-import UserSearchSelect from '../componants/UserSearchSelect'
 import {
-    Plus, SlidersHorizontal, X, ChevronLeft, ChevronRight,StickyNote,
-    Ticket, Users, AlertCircle, CheckCircle2, Clock,UserCog, Trash2
+    Plus, SlidersHorizontal, X, ChevronLeft, ChevronRight, StickyNote,
+    Ticket, Building2, AlertCircle, CheckCircle2, Clock, FolderCog, Trash2
 } from 'lucide-react'
 
-// ─── useTheme ─────────────────────────────────────────────────────────────────
+// ─── useTheme ──────────────────────────────────────────────────────────────────
 
 function useTheme() {
     const [isDark, setIsDark] = useState(() => {
@@ -23,7 +22,7 @@ function useTheme() {
             setIsDark(attr ? attr !== 'light' : !window.matchMedia('(prefers-color-scheme: light)').matches)
         })
         mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-        const mq = window.matchMedia('(prefers-color-scheme: light)')
+        const mq  = window.matchMedia('(prefers-color-scheme: light)')
         const mqh = (e) => { if (!document.documentElement.getAttribute('data-theme')) setIsDark(!e.matches) }
         mq.addEventListener('change', mqh)
         return () => { mo.disconnect(); mq.removeEventListener('change', mqh) }
@@ -31,7 +30,7 @@ function useTheme() {
     return isDark
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
+// ─── Design tokens ─────────────────────────────────────────────────────────────
 
 const tokens = (isDark) => {
     const d = isDark
@@ -77,7 +76,7 @@ const tokens = (isDark) => {
     }
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
     open:        { label: 'Open',        bg: (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.09)',   text: (d) => d ? '#f87171' : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.25)'   : 'rgba(220,38,38,0.28)'   },
@@ -93,10 +92,7 @@ const PRIORITY_CONFIG = {
     critical: { label: 'Critical', bg: (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.09)',   text: (d) => d ? '#f87171' : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.25)'   : 'rgba(220,38,38,0.28)'   },
 }
 
-const SEVERITY_COLORS = {
-    4: '#f87171', 3: '#fb923c', 2: '#fbbf24', 1: '#4ade80', 0: '#94a3b8',
-}
-
+const SEVERITY_COLORS = { 4: '#f87171', 3: '#fb923c', 2: '#fbbf24', 1: '#4ade80', 0: '#94a3b8' }
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50]
 
 const fmt = (dateStr) => {
@@ -104,7 +100,7 @@ const fmt = (dateStr) => {
     catch { return '—' }
 }
 
-// ─── Primitives ───────────────────────────────────────────────────────────────
+// ─── Primitives ────────────────────────────────────────────────────────────────
 
 function Card({ children, className = '', style = {}, tk }) {
     return (
@@ -119,11 +115,10 @@ function Badge({ cfg, label, isDark }) {
     const bg     = typeof cfg?.bg     === 'function' ? cfg.bg(isDark)     : (cfg?.bg     ?? 'rgba(100,116,139,0.12)')
     const text   = typeof cfg?.text   === 'function' ? cfg.text(isDark)   : (cfg?.text   ?? '#94a3b8')
     const border = typeof cfg?.border === 'function' ? cfg.border(isDark) : (cfg?.border ?? 'rgba(100,116,139,0.25)')
-    const displayLabel = label ?? cfg?.label
     return (
         <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
             style={{ background: bg, color: text, border: `1px solid ${border}` }}>
-            {displayLabel}
+            {label ?? cfg?.label}
         </span>
     )
 }
@@ -131,7 +126,7 @@ function Badge({ cfg, label, isDark }) {
 function StatCard({ label, value, accent, tk }) {
     return (
         <Card tk={tk} className="relative overflow-hidden p-5 flex flex-col gap-2">
-            <div className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-full opacity-10"/>
+            <div className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-full opacity-10" />
             <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>{label}</span>
             </div>
@@ -199,20 +194,20 @@ function PaginationBar({ currentPage, totalPages, onPage, tk }) {
     )
 }
 
-// ─── User Cell ────────────────────────────────────────────────────────────────
+// ─── Department Cell ───────────────────────────────────────────────────────────
 
-function UserCell({ user, tk }) {
-    if (!user) return <span className="text-xs" style={{ color: tk.textGhost }}>—</span>
-    const full = [user.firstName, user.lastName].filter(Boolean).join(' ')
+function DepartmentCell({ department, tk }) {
+    if (!department?.id) return <span className="text-xs" style={{ color: tk.textGhost }}>—</span>
     return (
-        <div>
-            <p className="text-sm font-medium" style={{ color: tk.textSecondary }}>{full || user.username || user.id}</p>
-            {user.email && <p className="text-[11px] mt-0.5" style={{ color: tk.textFaint }}>{user.email}</p>}
+        <div className="flex items-center gap-1.5">
+            <span className="text-sm font-medium" style={{ color: tk.textSecondary }}>
+                {department.name || department.id}
+            </span>
         </div>
     )
 }
 
-// ─── Incident Cell ────────────────────────────────────────────────────────────
+// ─── Incident Cell ─────────────────────────────────────────────────────────────
 
 function IncidentCell({ incident, tk }) {
     if (!incident) return <span className="text-xs" style={{ color: tk.textGhost }}>—</span>
@@ -229,7 +224,7 @@ function IncidentCell({ incident, tk }) {
     )
 }
 
-// ─── Notes Modal ──────────────────────────────────────────────────────────────
+// ─── Notes Modal ───────────────────────────────────────────────────────────────
 
 const NotesModal = ({ notes, onClose, tk }) => (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -259,23 +254,98 @@ const NotesModal = ({ notes, onClose, tk }) => (
     </div>
 )
 
-// ─── Reassign Modal ───────────────────────────────────────────────────────────
+// ─── Department Selector ───────────────────────────────────────────────────────
+// Charge dynamiquement les groupes Keycloak via GET /tickets/departments
 
-const ReassignTicketModal = ({ ticket, users, onClose, onReassigned, tk, isDark }) => {
-    const [selectedUser, setSelectedUser] = useState(ticket.assigned_to)
-    const [loading, setLoading] = useState(false)
-    const [error,   setError]   = useState(null)
+function DepartmentSelect({ value, onChange, name = 'department_id', tk, placeholder = 'Select department…' }) {
+    const [departments, setDepartments] = useState([])
+    const [loading,     setLoading]     = useState(true)
+    const [error,       setError]       = useState(null)
+
+    useEffect(() => {
+        setLoading(true)
+        api.get('/tickets/departments')
+            .then(r => { setDepartments(r.data.departments || []); setLoading(false) })
+            .catch(err => { setError('Failed to load departments'); setLoading(false) })
+    }, [])
+
+    const selectStyle = {
+        background:   tk.bgInput,
+        border:       `1px solid ${tk.borderInput}`,
+        color:        loading ? tk.textFaint : tk.textInput,
+        borderRadius: '8px',
+        padding:      '8px 12px',
+        fontSize:     '13px',
+        width:        '100%',
+        outline:      'none',
+        transition:   'border-color 0.15s',
+    }
+
+    if (error) return (
+        <div className="rounded-lg px-3 py-2 text-xs"
+            style={{ background: tk.bgErrorMsg, border: `1px solid ${tk.borderError}`, color: tk.textDanger }}>
+            {error}
+        </div>
+    )
+
+    return (
+        <select name={name} value={value} onChange={onChange} style={selectStyle} className="tkt-input" disabled={loading}>
+            <option value="">{loading ? 'Loading departments…' : placeholder}</option>
+            {departments.map(dept => (
+                <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+        </select>
+    )
+}
+
+// ─── Reassign Department Modal ─────────────────────────────────────────────────
+
+const ReassignDepartmentModal = ({ ticket, onClose, onReassigned, tk, isDark }) => {
+    const [selectedDeptId,   setSelectedDeptId]   = useState(ticket.department?.id   || '')
+    const [selectedDeptName, setSelectedDeptName] = useState(ticket.department?.name || '')
+    const [departments,      setDepartments]      = useState([])
+    const [deptLoading,      setDeptLoading]      = useState(true)
+    const [loading,          setLoading]          = useState(false)
+    const [error,            setError]            = useState(null)
+
+    useEffect(() => {
+        api.get('/tickets/departments')
+            .then(r => { setDepartments(r.data.departments || []); setDeptLoading(false) })
+            .catch(() => { setError('Failed to load departments'); setDeptLoading(false) })
+    }, [])
+
+    const handleSelect = (e) => {
+        const id   = e.target.value
+        const dept = departments.find(d => d.id === id)
+        setSelectedDeptId(id)
+        setSelectedDeptName(dept?.name || '')
+    }
 
     const handleReassign = async () => {
-        if (!selectedUser)                       { setError('Please select a user.'); return }
-        if (selectedUser === ticket.assigned_to) { setError('Please select a different user.'); return }
+        if (!selectedDeptId)                         { setError('Please select a department.'); return }
+        if (selectedDeptId === ticket.department?.id) { setError('Please select a different department.'); return }
         setLoading(true); setError(null)
         try {
-            const { data } = await api.put(`/tickets/${ticket._id}`, { assigned_to: selectedUser })
+            const { data } = await api.put(`/tickets/${ticket._id}`, {
+                department_id:   selectedDeptId,
+                department_name: selectedDeptName,
+            })
             onReassigned(data.ticket); onClose()
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to reassign ticket.')
         } finally { setLoading(false) }
+    }
+
+    const selectStyle = {
+        background:   tk.bgInput,
+        border:       `1px solid ${tk.borderInput}`,
+        color:        tk.textInput,
+        borderRadius: '8px',
+        padding:      '8px 12px',
+        fontSize:     '13px',
+        width:        '100%',
+        outline:      'none',
+        transition:   'border-color 0.15s',
     }
 
     return (
@@ -286,9 +356,9 @@ const ReassignTicketModal = ({ ticket, users, onClose, onReassigned, tk, isDark 
                     <div className="flex items-center gap-3">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg"
                             style={{ background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)' }}>
-                            <Users size={13} style={{ color: '#38bdf8' }} />
+                            <Building2 size={13} style={{ color: '#38bdf8' }} />
                         </div>
-                        <h2 className="text-sm font-semibold" style={{ color: tk.textPrimary }}>Reassign Ticket</h2>
+                        <h2 className="text-sm font-semibold" style={{ color: tk.textPrimary }}>Reassign Department</h2>
                     </div>
                     <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
                         style={{ color: tk.textFaint }}
@@ -306,14 +376,18 @@ const ReassignTicketModal = ({ ticket, users, onClose, onReassigned, tk, isDark 
                     )}
                     <div>
                         <label style={{ display: 'block', fontSize: '10px', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', color: tk.textFaint, marginBottom: '6px' }}>
-                            Assign to *
+                            Department *
                         </label>
-                        <UserSearchSelect users={users} value={selectedUser}
-                            onChange={e => setSelectedUser(e.target.value)} name="assigned_to" className="" />
+                        <select value={selectedDeptId} onChange={handleSelect} style={selectStyle} className="tkt-input" disabled={deptLoading}>
+                            <option value="">{deptLoading ? 'Loading…' : 'Select department…'}</option>
+                            {departments.map(d => (
+                                <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="rounded-lg px-3 py-2.5 text-xs"
                         style={{ background: tk.bgInfoBanner, border: `1px solid ${tk.borderInfo}`, color: tk.textInfo }}>
-                        Currently assigned: {ticket.assigned_user?.firstName || ticket.assigned_user?.username || '—'}
+                        Currently assigned: <strong>{ticket.department?.name || '—'}</strong>
                     </div>
                 </div>
                 <div className="flex justify-end gap-2 px-6 py-4"
@@ -324,9 +398,9 @@ const ReassignTicketModal = ({ ticket, users, onClose, onReassigned, tk, isDark 
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
                         Cancel
                     </button>
-                    <button onClick={handleReassign} disabled={loading}
+                    <button onClick={handleReassign} disabled={loading || deptLoading}
                         className="rounded-lg px-4 py-2 text-sm font-semibold transition-all"
-                        style={{ background: '#02c39a', color: '#0d1b2a', opacity: loading ? 0.6 : 1 }}
+                        style={{ background: '#02c39a', color: '#0d1b2a', opacity: (loading || deptLoading) ? 0.6 : 1 }}
                         onMouseEnter={e => !loading && (e.currentTarget.style.background = '#02e0b1')}
                         onMouseLeave={e => !loading && (e.currentTarget.style.background = '#02c39a')}>
                         {loading ? 'Reassigning…' : 'Reassign'}
@@ -337,15 +411,22 @@ const ReassignTicketModal = ({ ticket, users, onClose, onReassigned, tk, isDark 
     )
 }
 
-// ─── Create Ticket Modal ──────────────────────────────────────────────────────
+// ─── Create Ticket Modal ───────────────────────────────────────────────────────
 
-const CreateTicketModal = ({ incidentId, users, onClose, onCreated, tk }) => {
+const CreateTicketModal = ({ incidentId, onClose, onCreated, tk }) => {
     const [form, setForm] = useState({
-        name: '', incident_id: incidentId || '', assigned_to: '', priority: 'medium', notes: '',
+        name:            '',
+        incident_id:     incidentId || '',
+        department_id:   '',
+        department_name: '',
+        priority:        'medium',
+        notes:           '',
     })
-    const [incidents, setIncidents] = useState([])
-    const [loading,   setLoading]   = useState(false)
-    const [error,     setError]     = useState(null)
+    const [departments, setDepartments] = useState([])
+    const [deptLoading, setDeptLoading] = useState(true)
+    const [incidents,   setIncidents]   = useState([])
+    const [loading,     setLoading]     = useState(false)
+    const [error,       setError]       = useState(null)
 
     const inputStyle = useMemo(() => ({
         background:   tk.bgInput,
@@ -365,6 +446,14 @@ const CreateTicketModal = ({ incidentId, users, onClose, onCreated, tk }) => {
         color: tk.textFaint, marginBottom: '6px',
     }
 
+    // Charger les départements depuis Keycloak via backend
+    useEffect(() => {
+        api.get('/tickets/departments')
+            .then(r => { setDepartments(r.data.departments || []); setDeptLoading(false) })
+            .catch(() => { setError('Failed to load departments.'); setDeptLoading(false) })
+    }, [])
+
+    // Charger les incidents si pas de incidentId fixe
     useEffect(() => {
         if (!incidentId) {
             api.get('/incidents')
@@ -373,12 +462,18 @@ const CreateTicketModal = ({ incidentId, users, onClose, onCreated, tk }) => {
         }
     }, [incidentId])
 
-    const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+    const handle = (e) => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+
+    const handleDeptChange = (e) => {
+        const id   = e.target.value
+        const dept = departments.find(d => d.id === id)
+        setForm(f => ({ ...f, department_id: id, department_name: dept?.name || '' }))
+    }
 
     const submit = async () => {
-        if (!form.name.trim()) { setError('Ticket name is required.'); return }
-        if (!form.incident_id) { setError('Please select an incident.'); return }
-        if (!form.assigned_to) { setError('Please assign a user.'); return }
+        if (!form.name.trim())       { setError('Ticket name is required.'); return }
+        if (!form.incident_id)       { setError('Please select an incident.'); return }
+        if (!form.department_id)     { setError('Please select a department.'); return }
         setLoading(true); setError(null)
         try {
             const { data } = await api.post('/tickets', form)
@@ -437,9 +532,22 @@ const CreateTicketModal = ({ incidentId, users, onClose, onCreated, tk }) => {
                         </div>
                     )}
 
+                    {/* Department selector — chargé dynamiquement depuis Keycloak */}
                     <div>
-                        <label style={labelStyle}>Assign to *</label>
-                        <UserSearchSelect users={users} value={form.assigned_to} onChange={handle} name="assigned_to" className="" />
+                        <label style={labelStyle}>Department *</label>
+                        <select
+                            name="department_id"
+                            value={form.department_id}
+                            onChange={handleDeptChange}
+                            className="tkt-input"
+                            style={{ ...inputStyle, color: deptLoading ? tk.textFaint : tk.textInput }}
+                            disabled={deptLoading}
+                        >
+                            <option value="">{deptLoading ? 'Loading departments…' : 'Select a department…'}</option>
+                            {departments.map(dept => (
+                                <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>
@@ -479,7 +587,7 @@ const CreateTicketModal = ({ incidentId, users, onClose, onCreated, tk }) => {
     )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Tickets() {
     const { isAdmin }                          = useAuth()
@@ -511,54 +619,56 @@ export default function Tickets() {
     const canUpdate  = isAdmin || can('UPDATE_TICKET')
     const canDelete  = isAdmin || can('DELETE_TICKET')
 
-    const [allTickets,  setAllTickets]  = useState([])
-    const [myTickets,   setMyTickets]   = useState([])
-    const [stats,       setStats]       = useState(null)
-    const [users,       setUsers]       = useState([])
-    const [loading,     setLoading]     = useState(true)
-    const [error,       setError]       = useState(null)
+    const [allTickets,   setAllTickets]   = useState([])
+    const [deptTickets,  setDeptTickets]  = useState([])   // ex "my tickets" → department tickets
+    const [departments,  setDepartments]  = useState([])   // pour le filtre
+    const [stats,        setStats]        = useState(null)
+    const [loading,      setLoading]      = useState(true)
+    const [error,        setError]        = useState(null)
 
-    const [activeTab,      setActiveTab]      = useState('mine')
-    const [showModal,      setShowModal]      = useState(false)
-    const [showNotesModal, setShowNotesModal] = useState(false)
-    const [selectedNotes,  setSelectedNotes]  = useState(null)
-    const [reassignTarget, setReassignTarget] = useState(null)
-    const [deleteTarget,   setDeleteTarget]   = useState(null)
-    const [showFilters,    setShowFilters]    = useState(false)
+    const [activeTab,         setActiveTab]         = useState('dept')
+    const [showModal,         setShowModal]         = useState(false)
+    const [showNotesModal,    setShowNotesModal]    = useState(false)
+    const [selectedNotes,     setSelectedNotes]     = useState(null)
+    const [reassignTarget,    setReassignTarget]    = useState(null)
+    const [deleteTarget,      setDeleteTarget]      = useState(null)
+    const [showFilters,       setShowFilters]       = useState(false)
 
     const [currentPage, setCurrentPage] = useState(1)
     const [pageSize,    setPageSize]    = useState(25)
 
     const [filterStatus,     setFilterStatus]     = useState('')
     const [filterPriority,   setFilterPriority]   = useState('')
-    const [filterAssignedTo, setFilterAssignedTo] = useState('')
+    const [filterDepartment, setFilterDepartment] = useState('')
     const [filterCreatedBy,  setFilterCreatedBy]  = useState('')
 
     useEffect(() => {
-        if (!permissionsLoading) setActiveTab(canViewAll ? 'all' : 'mine')
+        if (!permissionsLoading) setActiveTab(canViewAll ? 'all' : 'dept')
     }, [permissionsLoading, canViewAll])
+
+    // Charger les départements pour le filtre (admin/VIEW_TICKETS uniquement)
+    useEffect(() => {
+        if (canViewAll) {
+            api.get('/tickets/departments')
+                .then(r => setDepartments(r.data.departments || []))
+                .catch(() => {})
+        }
+    }, [canViewAll])
 
     const fetchData = useCallback(async () => {
         setLoading(true); setError(null)
         try {
-            const [mineRes, statsRes] = await Promise.all([
-                api.get('/tickets/mine'),
+            const [deptRes, statsRes] = await Promise.all([
+                api.get('/tickets/mine'),   // department tickets du user connecté
                 api.get('/tickets/stats'),
             ])
-            setMyTickets(mineRes.data.tickets || [])
+            setDeptTickets(deptRes.data.tickets || [])
             setStats(statsRes.data)
 
             if (canViewAll) {
-                const [allRes, usersRes] = await Promise.allSettled([
-                    api.get('/tickets'),
-                    api.get('/users'),
-                ])
-                if (allRes.status === 'fulfilled')
-                    setAllTickets(allRes.value.data.tickets || [])
-                if (usersRes.status === 'fulfilled')
-                    setUsers(usersRes.value.data || [])
+                const allRes = await api.get('/tickets').catch(() => ({ data: { tickets: [] } }))
+                setAllTickets(allRes.data.tickets || [])
             }
-
         } catch (err) {
             if (err.response?.status !== 403)
                 setError(err.response?.data?.message || 'Failed to load tickets.')
@@ -570,28 +680,28 @@ export default function Tickets() {
     useEffect(() => { if (!permissionsLoading) fetchData() }, [fetchData, permissionsLoading])
 
     const filteredAll = useMemo(() => allTickets.filter(t => {
-        if (filterStatus     && t.status      !== filterStatus)     return false
-        if (filterPriority   && t.priority    !== filterPriority)   return false
-        if (filterAssignedTo && t.assigned_to !== filterAssignedTo) return false
-        if (filterCreatedBy  && t.created_by  !== filterCreatedBy)  return false
+        if (filterStatus     && t.status             !== filterStatus)     return false
+        if (filterPriority   && t.priority           !== filterPriority)   return false
+        if (filterDepartment && t.department?.id     !== filterDepartment) return false
+        if (filterCreatedBy  && t.created_by         !== filterCreatedBy)  return false
         return true
-    }), [allTickets, filterStatus, filterPriority, filterAssignedTo, filterCreatedBy])
+    }), [allTickets, filterStatus, filterPriority, filterDepartment, filterCreatedBy])
 
-    const filteredMine = useMemo(() => myTickets.filter(t => {
+    const filteredDept = useMemo(() => deptTickets.filter(t => {
         if (filterStatus   && t.status   !== filterStatus)   return false
         if (filterPriority && t.priority !== filterPriority) return false
         return true
-    }), [myTickets, filterStatus, filterPriority])
+    }), [deptTickets, filterStatus, filterPriority])
 
-    const displayed     = activeTab === 'mine' ? filteredMine : filteredAll
+    const displayed     = activeTab === 'dept' ? filteredDept : filteredAll
     const totalPages    = Math.max(1, Math.ceil(displayed.length / pageSize))
     const startIndex    = (currentPage - 1) * pageSize
     const paginatedRows = displayed.slice(startIndex, startIndex + pageSize)
-    const hasActiveFilters = filterStatus || filterPriority || filterAssignedTo || filterCreatedBy
+    const hasActiveFilters = filterStatus || filterPriority || filterDepartment || filterCreatedBy
 
     const resetFilters = () => {
         setFilterStatus(''); setFilterPriority('')
-        setFilterAssignedTo(''); setFilterCreatedBy('')
+        setFilterDepartment(''); setFilterCreatedBy('')
         setCurrentPage(1)
     }
 
@@ -599,28 +709,29 @@ export default function Tickets() {
         try {
             await api.put(`/tickets/${ticketId}`, { status: newStatus })
             const update = list => list.map(t => t._id === ticketId ? { ...t, status: newStatus } : t)
-            setAllTickets(update); setMyTickets(update)
+            setAllTickets(update); setDeptTickets(update)
         } catch (err) { alert(err.response?.data?.message || 'Failed to update ticket status.') }
     }
 
     const handleReassigned = (updatedTicket) => {
         const update = list => list.map(t => t._id === updatedTicket._id ? updatedTicket : t)
-        setAllTickets(update); setMyTickets(update); setReassignTarget(null); fetchData()
+        setAllTickets(update); setDeptTickets(update)
+        setReassignTarget(null); fetchData()
     }
 
     const handleDelete = async () => {
         if (!deleteTarget) return
         try {
             await api.delete(`/tickets/${deleteTarget.id}`)
-            setAllTickets(prev => prev.filter(t => t._id !== deleteTarget.id))
-            setMyTickets(prev  => prev.filter(t => t._id !== deleteTarget.id))
+            setAllTickets(prev  => prev.filter(t => t._id !== deleteTarget.id))
+            setDeptTickets(prev => prev.filter(t => t._id !== deleteTarget.id))
             setDeleteTarget(null); fetchData()
         } catch (err) { alert(err.response?.data?.message || 'Failed to delete ticket.') }
     }
 
     const handleCreated = (newTicket) => {
         if (canViewAll) setAllTickets(prev => [newTicket, ...prev])
-        setMyTickets(prev => [newTicket, ...prev]); fetchData()
+        setDeptTickets(prev => [newTicket, ...prev]); fetchData()
     }
 
     // ── Derived stats ──
@@ -629,8 +740,8 @@ export default function Tickets() {
     const totalCount       = stats?.total        ?? 0
     const openCount        = ticketByStatus.find(s => s._id === 'open')?.count      ?? 0
     const criticalCount    = ticketByPriority.find(s => s._id === 'critical')?.count ?? 0
-    const mineCount        = stats?.my_tickets   ?? 0
-    const highCount        = ticketByPriority.find(s => s._id === 'high')?.count ?? 0
+    const deptCount        = stats?.my_tickets   ?? 0   // tickets des départements du user
+    const highCount        = ticketByPriority.find(s => s._id === 'high')?.count   ?? 0
     const mediumCount      = ticketByPriority.find(s => s._id === 'medium')?.count ?? 0
 
     if (permissionsLoading) {
@@ -666,7 +777,7 @@ export default function Tickets() {
                     style={{ borderBottom: `1px solid ${tk.border}`, paddingBottom: '20px' }}>
                     <div>
                         <h2 className="text-lg font-semibold tracking-tight" style={{ color: tk.textPrimary }}>Ticket Management</h2>
-                        <p className="mt-0.5 text-[11px]" style={{ color: tk.textFaint }}>Track and manage security incident tickets</p>
+                        <p className="mt-0.5 text-[11px]" style={{ color: tk.textFaint }}>Track and manage security incident tickets by department</p>
                     </div>
                     {canCreate && (
                         <button onClick={() => setShowModal(true)}
@@ -690,12 +801,12 @@ export default function Tickets() {
                 {/* ── Stats ── */}
                 {stats && (
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-                        <StatCard tk={tk} label="Total"          value={totalCount}    accent="#02c39a"/>
-                        <StatCard tk={tk} label="Open"           value={openCount}     accent="#fbbf24"/>
-                        <StatCard tk={tk} label="Critical"       value={criticalCount} accent="#f87171"/>
-                        <StatCard tk={tk} label="High"           value={highCount}     accent="#fb923c"/>
-                        <StatCard tk={tk} label="Medium"         value={mediumCount}   accent="#fbbf24"/>
-                        <StatCard tk={tk} label="Assigned to Me" value={mineCount}     accent="#38bdf8"/>
+                        <StatCard tk={tk} label="Total"              value={totalCount}   accent="#02c39a"/>
+                        <StatCard tk={tk} label="Open"               value={openCount}    accent="#fbbf24"/>
+                        <StatCard tk={tk} label="Critical"           value={criticalCount}accent="#f87171"/>
+                        <StatCard tk={tk} label="High"               value={highCount}    accent="#fb923c"/>
+                        <StatCard tk={tk} label="Medium"             value={mediumCount}  accent="#fbbf24"/>
+                        <StatCard tk={tk} label="My Dept. Tickets"   value={deptCount}    accent="#38bdf8"/>
                     </div>
                 )}
 
@@ -709,9 +820,7 @@ export default function Tickets() {
                             <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>Filters</span>
                             {hasActiveFilters && (
                                 <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                                    style={{ background: tk.bgFilterActive, color: '#02c39a' }}>
-                                    active
-                                </span>
+                                    style={{ background: tk.bgFilterActive, color: '#02c39a' }}>active</span>
                             )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -754,16 +863,20 @@ export default function Tickets() {
                                 {canViewAll && (
                                     <>
                                         <div>
-                                            <label style={labelStyle}>Assigned to</label>
-                                            <UserSearchSelect users={users} value={filterAssignedTo}
-                                                onChange={e => { setFilterAssignedTo(e.target.value); setCurrentPage(1) }}
-                                                name="filterAssignedTo" className="" placeholder="All users…" />
+                                            <label style={labelStyle}>Department</label>
+                                            <select className="tkt-input" style={inputStyle} value={filterDepartment}
+                                                onChange={e => { setFilterDepartment(e.target.value); setCurrentPage(1) }}>
+                                                <option value="">All departments</option>
+                                                {departments.map(d => (
+                                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div>
-                                            <label style={labelStyle}>Created by</label>
-                                            <UserSearchSelect users={users} value={filterCreatedBy}
-                                                onChange={e => { setFilterCreatedBy(e.target.value); setCurrentPage(1) }}
-                                                name="filterCreatedBy" className="" placeholder="All users…" />
+                                            <label style={labelStyle}>Created by (ID)</label>
+                                            <input className="tkt-input" style={inputStyle} value={filterCreatedBy}
+                                                placeholder="User ID…"
+                                                onChange={e => { setFilterCreatedBy(e.target.value); setCurrentPage(1) }} />
                                         </div>
                                     </>
                                 )}
@@ -809,25 +922,23 @@ export default function Tickets() {
                                 </span>
                             </button>
                         )}
-                        <button onClick={() => { setActiveTab('mine'); setCurrentPage(1) }}
+                        <button onClick={() => { setActiveTab('dept'); setCurrentPage(1) }}
                             className="px-6 py-3 text-sm font-medium transition-all duration-150"
                             style={{
-                                color: activeTab === 'mine' ? '#02c39a' : tk.textFaint,
-                                borderBottom: activeTab === 'mine' ? '2px solid #02c39a' : '2px solid transparent',
+                                color: activeTab === 'dept' ? '#02c39a' : tk.textFaint,
+                                borderBottom: activeTab === 'dept' ? '2px solid #02c39a' : '2px solid transparent',
                                 background: 'transparent',
                             }}>
-                            My Tickets
+                            Department Tickets
                             <span className="ml-2 rounded-full px-2 py-0.5 text-[10px]"
-                                style={{ background: activeTab === 'mine' ? 'rgba(2,195,154,0.12)' : tk.bgSubtle, color: activeTab === 'mine' ? '#02c39a' : tk.textFaint }}>
-                                {myTickets.length}
+                                style={{ background: activeTab === 'dept' ? 'rgba(2,195,154,0.12)' : tk.bgSubtle, color: activeTab === 'dept' ? '#02c39a' : tk.textFaint }}>
+                                {deptTickets.length}
                             </span>
                         </button>
                     </div>
 
-                    {/* Loading skeleton */}
                     {loading && <Skeleton rows={4} tk={tk} />}
 
-                    {/* Empty */}
                     {!loading && !error && displayed.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-16 text-center">
                             <div>
@@ -844,16 +955,15 @@ export default function Tickets() {
                         </div>
                     )}
 
-                    {/* Table */}
                     {!loading && paginatedRows.length > 0 && (
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[1120px]" style={{ borderCollapse: 'collapse' }}>
+                            <table className="w-full min-w-[1100px]" style={{ borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ background: tk.bgThead, borderBottom: `1px solid ${tk.border}` }}>
                                         {[
                                             { label: 'Name' },
                                             { label: 'Incident' },
-                                            { label: 'Assigned to' },
+                                            { label: 'Department' },
                                             canViewAll ? { label: 'Created by' } : null,
                                             { label: 'Priority' },
                                             { label: 'Status' },
@@ -886,15 +996,26 @@ export default function Tickets() {
                                                 <IncidentCell incident={ticket.incident} tk={tk} />
                                             </td>
 
-                                            {/* Assigned to */}
+                                            {/* Department */}
                                             <td className="px-4 py-3">
-                                                <UserCell user={ticket.assigned_user} tk={tk} />
+                                                <DepartmentCell department={ticket.department} tk={tk} />
                                             </td>
 
                                             {/* Created by */}
                                             {canViewAll && (
                                                 <td className="px-4 py-3">
-                                                    <UserCell user={ticket.created_by_user} tk={tk} />
+                                                    {ticket.created_by_user ? (
+                                                        <div>
+                                                            <p className="text-sm font-medium" style={{ color: tk.textSecondary }}>
+                                                                {[ticket.created_by_user.firstName, ticket.created_by_user.lastName].filter(Boolean).join(' ') || ticket.created_by_user.username || ticket.created_by_user.id}
+                                                            </p>
+                                                            {ticket.created_by_user.email && (
+                                                                <p className="text-[11px] mt-0.5" style={{ color: tk.textFaint }}>{ticket.created_by_user.email}</p>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs" style={{ color: tk.textGhost }}>—</span>
+                                                    )}
                                                 </td>
                                             )}
 
@@ -937,14 +1058,13 @@ export default function Tickets() {
                                                     )}
                                                     {canUpdate && (
                                                         <button
-                                                            title="Reassign"
+                                                            title="Reassign department"
                                                             onClick={() => setReassignTarget(ticket)}
                                                             className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
                                                             style={{ background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted }}
                                                             onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, border: `1px solid ${tk.borderAction}`, color: '#02c39a' })}
-                                                            onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted })}
-                                                        >
-                                                            <UserCog size={13} />
+                                                            onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted })}>
+                                                            <FolderCog size={13} />
                                                         </button>
                                                     )}
                                                     {canDelete && (
@@ -954,8 +1074,7 @@ export default function Tickets() {
                                                             className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
                                                             style={{ background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger }}
                                                             onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgDangerHover, border: `1px solid rgba(239,68,68,0.35)`, color: '#fca5a5' })}
-                                                            onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger })}
-                                                        >
+                                                            onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger })}>
                                                             <Trash2 size={13} />
                                                         </button>
                                                     )}
@@ -976,13 +1095,14 @@ export default function Tickets() {
 
                 {/* ── Modals ── */}
                 {showModal && (
-                    <CreateTicketModal users={users} onClose={() => setShowModal(false)} onCreated={handleCreated} tk={tk} />
+                    <CreateTicketModal onClose={() => setShowModal(false)} onCreated={handleCreated} tk={tk} />
                 )}
 
                 {reassignTarget && (
-                    <ReassignTicketModal
-                        ticket={reassignTarget} users={users}
-                        onClose={() => setReassignTarget(null)} onReassigned={handleReassigned}
+                    <ReassignDepartmentModal
+                        ticket={reassignTarget}
+                        onClose={() => setReassignTarget(null)}
+                        onReassigned={handleReassigned}
                         tk={tk} isDark={isDark}
                     />
                 )}

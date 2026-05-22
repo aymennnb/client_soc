@@ -205,6 +205,9 @@ function Users() {
     const [deleteTarget,  setDeleteTarget]  = useState(null)
     const [deleting,      setDeleting]      = useState(false)
 
+
+    const navigate = useNavigate();
+
     const fetchUsers = async () => {
         setLoading(true); setError('')
         try {
@@ -466,6 +469,15 @@ function Users() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center gap-1.5">
+                                                    <button
+                                                        title="Permissions"
+                                                        onClick={() => navigate(`/users/${user.id}/permissions`)}
+                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
+                                                        style={{ background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted }}
+                                                        onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, border: `1px solid ${tk.borderAction}`, color: '#02c39a' })}
+                                                        onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted })}>
+                                                        <Shield size={13} />
+                                                    </button>
                                                     <button
                                                         title="Edit"
                                                         onClick={() => setEditingUserId(user.id)}

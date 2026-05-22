@@ -1,9 +1,26 @@
-import { useKeycloak } from '../context/KeycloakContext'
-import { useState, useEffect } from 'react'
-import api from '../api'
+/**
+ * userAuth.js
+ * ─────────────────────────────────────────────────────────────────────────────
+ * CHANGEMENTS :
+ *   ✗ SUPPRIMÉ  — import { useKeycloak } from '../context/KeycloakContext'
+ *   ✓ REMPLACÉ  — import { useAuth }     from '../context/AuthContext'
+ *   ✓ CONSERVÉ  — interface publique identique : useAuth(), usePermissions()
+ *
+ * Les consumers existants qui importent { useAuth } depuis ce fichier
+ * n'ont AUCUNE modification à faire.
+ */
 
+import { useAuth as useAuthContext } from '../context/AuthContext'
+import { useState, useEffect }       from 'react'
+import api                           from '../api'
+
+// ─── useAuth ──────────────────────────────────────────────────────────────────
+/**
+ * Hook principal — remplace l'ancien qui lisait depuis KeycloakContext.
+ * Interface 100 % identique.
+ */
 export function useAuth() {
-    const { userInfo, isAdmin, hasRole, token, isAuthenticated } = useKeycloak()
+    const { userInfo, isAdmin, hasRole, token, isAuthenticated, logout } = useAuthContext()
 
     return {
         userId:          userInfo?.id,
@@ -14,13 +31,19 @@ export function useAuth() {
         hasRole,
         token,
         isAuthenticated,
+        logout,           // nouveau — expose logout pour les composants qui en ont besoin
     }
 }
 
+// ─── usePermissions ───────────────────────────────────────────────────────────
+/**
+ * Inchangé dans sa logique : charge les permissions depuis le backend.
+ * Seul le hook source change (useAuthContext au lieu de useKeycloak).
+ */
 export function usePermissions() {
-    const { userInfo, isAdmin } = useKeycloak()
+    const { userInfo, isAdmin } = useAuthContext()
     const [permissions, setPermissions] = useState([])
-    const [loading, setLoading] = useState(true)
+    const [loading,     setLoading]     = useState(true)
 
     useEffect(() => {
         if (isAdmin) {
@@ -50,8 +73,8 @@ export function usePermissions() {
     }, [userInfo?.id, isAdmin])
 
     const can = (permission) => {
-        if (loading) return false
-        if (!permissions) return false
+        if (loading)       return false
+        if (!permissions)  return false
         if (permissions.includes('ALL')) return true
         return permissions.includes(permission)
     }

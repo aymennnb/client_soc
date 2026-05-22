@@ -1,85 +1,163 @@
-import { useEffect, useState } from 'react'
-import { useKeycloak } from '../context/KeycloakContext'
-import { Sun, Moon, Shield, KeyRound, Loader2, AlertCircle } from 'lucide-react'
+/**
+ * Login.jsx
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Remplace l'ancien Login.jsx (redirect Keycloak)
+ *
+ * CHANGEMENTS :
+ *   ✗ SUPPRIMÉ  — keycloak.login({ redirectUri })
+ *   ✗ SUPPRIMÉ  — import { useKeycloak } (plus besoin du keycloak object)
+ *   ✓ NOUVEAU   — Formulaire username + password
+ *   ✓ NOUVEAU   — Appelle auth.login(username, password) → backend
+ *   ✓ CONSERVÉ  — dark/light mode identique
+ *   ✓ CONSERVÉ  — même charte graphique (couleurs, animations, AmbientOrbs)
+ */
 
-// ─── Theme helpers ────────────────────────────────────────────────────────────
+import { useState, useEffect } from 'react'
+import { useNavigate }         from 'react-router-dom'
+import { useAuth }             from '../context/AuthContext'
+import {
+    Sun, Moon, Eye, EyeOff,
+    Loader2, AlertCircle, ShieldCheck,
+} from 'lucide-react'
 
+// ─── Theme helpers (identique à l'original) ───────────────────────────────────
 const getInitialTheme = () => localStorage.getItem('theme') || 'dark'
 const applyTheme = (theme) => {
-    document.documentElement.classList.toggle('light-mode', theme === 'light')
+    document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
 }
 
-// ─── Ambient background orbs ──────────────────────────────────────────────────
-
+// ─── Ambient background orbs (inchangé) ──────────────────────────────────────
 function AmbientOrbs({ isDark }) {
     if (!isDark) return null
     return (
         <>
-            <div
-                className="pointer-events-none fixed"
-                style={{
-                    top: '-20vh', left: '-10vw',
-                    width: '60vw', height: '60vw',
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(2,128,144,0.07) 0%, transparent 70%)',
-                    filter: 'blur(40px)',
-                }}
-            />
-            <div
-                className="pointer-events-none fixed"
-                style={{
-                    bottom: '-15vh', right: '-10vw',
-                    width: '50vw', height: '50vw',
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(2,195,154,0.05) 0%, transparent 70%)',
-                    filter: 'blur(40px)',
-                }}
-            />
+            <div className="pointer-events-none fixed" style={{
+                top: '-20vh', left: '-10vw',
+                width: '60vw', height: '60vw', borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(2,128,144,0.07) 0%, transparent 70%)',
+                filter: 'blur(40px)',
+            }} />
+            <div className="pointer-events-none fixed" style={{
+                bottom: '-15vh', right: '-10vw',
+                width: '50vw', height: '50vw', borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(2,195,154,0.05) 0%, transparent 70%)',
+                filter: 'blur(40px)',
+            }} />
         </>
     )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
-function Login() {
-    const { keycloak, loading, isAuthenticated, error } = useKeycloak()
-    const [theme, setTheme]         = useState(getInitialTheme)
-    const [isLoggingIn, setIsLoggingIn] = useState(false)
-
-    useEffect(() => { applyTheme(theme) }, [theme])
-    const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
-    const isDark = theme === 'dark'
-
-    const handleLogin = () => {
-        setIsLoggingIn(true)
-        keycloak.login({ redirectUri: `${window.location.origin}/` })
-            .catch(() => setIsLoggingIn(false))
+// ─── Input field component ────────────────────────────────────────────────────
+function Field({ label, id, type, value, onChange, isDark, placeholder, suffix }) {
+    const base = {
+        width: '100%', padding: '10px 12px',
+        borderRadius: '10px', fontSize: '13px',
+        background: isDark ? 'rgba(10,21,32,0.8)' : '#f8fafc',
+        border: `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
+        color: isDark ? '#e2e8f0' : '#0f172a',
+        outline: 'none', transition: 'border-color 0.15s',
+        paddingRight: suffix ? '40px' : '12px',
     }
 
-    // ── Token values ──
-    const surface = isDark
-        ? { background: 'rgba(13,27,42,0.8)', border: '1px solid #1b263b' }
-        : { background: '#fff', border: '1px solid #e2e8f0' }
-
-    const pageBg = isDark ? '#0d1b2a' : '#f8fafc'
-
-    // ── Initial loading screen ──
-    if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center" style={{ background: pageBg }}>
-                <style>{`
-                    @keyframes spin-once { to { transform: rotate(360deg); } }
-                `}</style>
-                <div className="flex flex-col items-center gap-4">
-                    <div
-                        className="flex h-12 w-12 items-center justify-center rounded-2xl"
-                        style={{ background: 'rgba(2,128,144,0.12)', border: '1px solid rgba(2,128,144,0.25)' }}
-                    >
-                        <Loader2 size={20} className="animate-spin" style={{ color: '#028090' }} />
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label htmlFor={id} style={{
+                fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em',
+                color: isDark ? '#4a7a8a' : '#64748b', textTransform: 'uppercase',
+            }}>
+                {label}
+            </label>
+            <div style={{ position: 'relative' }}>
+                <input
+                    id={id}
+                    type={type}
+                    value={value}
+                    onChange={onChange}
+                    placeholder={placeholder}
+                    autoComplete={id}
+                    style={base}
+                    onFocus={e  => { e.target.style.borderColor = '#028090' }}
+                    onBlur={e   => { e.target.style.borderColor = isDark ? '#1b263b' : '#e2e8f0' }}
+                />
+                {suffix && (
+                    <div style={{
+                        position: 'absolute', right: '12px', top: '50%',
+                        transform: 'translateY(-50%)',
+                    }}>
+                        {suffix}
                     </div>
-                    <p className="text-sm" style={{ color: '#4a7a8a' }}>Initializing authentication…</p>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function Login() {
+    const { login, loading: authLoading, isAuthenticated } = useAuth()
+    const navigate = useNavigate()
+
+    const [theme,       setTheme]       = useState(getInitialTheme)
+    const [username,    setUsername]    = useState('')
+    const [password,    setPassword]    = useState('')
+    const [showPwd,     setShowPwd]     = useState(false)
+    const [submitting,  setSubmitting]  = useState(false)
+    const [error,       setError]       = useState(null)
+
+    useEffect(() => { applyTheme(theme) }, [theme])
+
+    // Rediriger si déjà authentifié
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) navigate('/', { replace: true })
+    }, [authLoading, isAuthenticated, navigate])
+
+    const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+    const isDark      = theme === 'dark'
+
+    // ── Soumission ─────────────────────────────────────────────────────────────
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        if (!username.trim() || !password) return
+
+        setError(null)
+        setSubmitting(true)
+
+        const result = await login(username.trim(), password)
+
+        if (result.success) {
+            navigate('/', { replace: true })
+        } else {
+            setError(result.error)
+            setSubmitting(false)
+        }
+    }
+
+    // ── Styles réutilisables ───────────────────────────────────────────────────
+    const surface = {
+        background: isDark ? 'rgba(13,27,42,0.85)' : '#fff',
+        border:     `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
+    }
+
+    // ── Écran de chargement initial (session restoration) ─────────────────────
+    if (authLoading) {
+        return (
+            <div style={{
+                display: 'flex', minHeight: '100vh',
+                alignItems: 'center', justifyContent: 'center',
+                background: isDark ? '#0d1b2a' : '#f8fafc',
+            }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                        display: 'flex', width: '48px', height: '48px',
+                        alignItems: 'center', justifyContent: 'center', borderRadius: '14px',
+                        background: 'rgba(2,128,144,0.12)', border: '1px solid rgba(2,128,144,0.25)',
+                    }}>
+                        <Loader2 size={20} style={{ color: '#028090', animation: 'spin 1s linear infinite' }} />
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#4a7a8a' }}>Restoring session…</p>
                 </div>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
             </div>
         )
     }
@@ -88,189 +166,204 @@ function Login() {
         <>
             <style>{`
                 @keyframes login-in {
-                    from { opacity: 0; transform: translateY(12px) scale(0.98); }
-                    to   { opacity: 1; transform: translateY(0)    scale(1);    }
+                    from { opacity: 0; transform: translateY(14px) scale(0.98); }
+                    to   { opacity: 1; transform: translateY(0) scale(1); }
                 }
-                .login-card { animation: login-in 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+                @keyframes spin { to { transform: rotate(360deg); } }
 
-                @keyframes pulse-ring {
-                    0%   { transform: scale(1);    opacity: 0.4; }
-                    100% { transform: scale(1.5);  opacity: 0;   }
+                input:-webkit-autofill,
+                input:-webkit-autofill:focus {
+                    -webkit-box-shadow: 0 0 0 1000px ${isDark ? '#0a1520' : '#f8fafc'} inset !important;
+                    -webkit-text-fill-color: ${isDark ? '#e2e8f0' : '#0f172a'} !important;
                 }
-                .pulse-ring { animation: pulse-ring 2.2s ease-out infinite; }
             `}</style>
 
-            <div
-                className="relative flex min-h-screen flex-col overflow-hidden"
-                style={{ background: pageBg, fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" }}
-            >
+            <div style={{
+                position: 'relative', display: 'flex', flexDirection: 'column',
+                minHeight: '100vh', overflow: 'hidden',
+                background: isDark ? '#0d1b2a' : '#f8fafc',
+                fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+            }}>
                 <AmbientOrbs isDark={isDark} />
 
-                {/* ── Top bar ── */}
-                <header
-                    className="relative z-10 flex h-14 shrink-0 items-center justify-between px-6"
-                    style={{
-                        background: isDark ? 'rgba(10,21,32,0.9)' : 'rgba(255,255,255,0.9)',
-                        borderBottom: `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
-                        backdropFilter: 'blur(8px)',
-                    }}
-                >
-                    {/* Logo */}
-                    <div className="flex items-center gap-2.5">
-                        <div
-                            className="flex h-7 w-7 items-center justify-center rounded-lg"
-                            style={{ background: 'rgba(2,128,144,0.15)', border: '1px solid rgba(2,128,144,0.3)' }}
-                        >
-                            <div
-                                className="h-2.5 w-2.5 rounded-full"
-                                style={{ background: '#02c39a', boxShadow: '0 0 6px rgba(2,195,154,0.6)' }}
-                            />
+                {/* ── Top bar (inchangé) ─────────────────────────────────── */}
+                <header style={{
+                    position: 'relative', zIndex: 10,
+                    display: 'flex', height: '56px', alignItems: 'center',
+                    justifyContent: 'space-between', padding: '0 24px',
+                    background: isDark ? 'rgba(10,21,32,0.9)' : 'rgba(255,255,255,0.9)',
+                    borderBottom: `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
+                    backdropFilter: 'blur(8px)',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                            display: 'flex', width: '28px', height: '28px',
+                            alignItems: 'center', justifyContent: 'center', borderRadius: '8px',
+                            background: 'rgba(2,128,144,0.15)', border: '1px solid rgba(2,128,144,0.3)',
+                        }}>
+                            <div style={{
+                                width: '10px', height: '10px', borderRadius: '50%',
+                                background: '#02c39a', boxShadow: '0 0 6px rgba(2,195,154,0.6)',
+                            }} />
                         </div>
                         <img
-                            src="/exia_logo.png"
-                            alt="EXIA"
-                            className="h-5 w-auto"
-                            style={{ filter: isDark ? 'brightness(0) invert(1)' : 'none', opacity: 0.9 }}
+                            src="/exia_logo.png" alt="EXIA" style={{
+                                height: '20px', width: 'auto', opacity: 0.9,
+                                filter: isDark ? 'brightness(0) invert(1)' : 'none',
+                            }}
                         />
                     </div>
 
-                    {/* Theme toggle */}
                     <button
                         onClick={toggleTheme}
                         title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                        className="flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-150"
                         style={{
+                            display: 'flex', width: '32px', height: '32px',
+                            alignItems: 'center', justifyContent: 'center', borderRadius: '10px',
                             background: isDark ? 'rgba(27,38,59,0.8)' : '#fff',
                             border: `1px solid ${isDark ? '#1b263b' : '#e2e8f0'}`,
-                            color: isDark ? '#4a7a8a' : '#64748b',
+                            color: isDark ? '#4a7a8a' : '#64748b', cursor: 'pointer',
+                            transition: 'border-color 0.15s, color 0.15s',
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#028090'; e.currentTarget.style.color = isDark ? '#02c39a' : '#028090' }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.borderColor = isDark ? '#1b263b' : '#e2e8f0'
-                            e.currentTarget.style.color = isDark ? '#4a7a8a' : '#64748b'
-                        }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#028090'; e.currentTarget.style.color = '#028090' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = isDark ? '#1b263b' : '#e2e8f0'; e.currentTarget.style.color = isDark ? '#4a7a8a' : '#64748b' }}
                     >
                         {isDark ? <Sun size={15} /> : <Moon size={15} />}
                     </button>
                 </header>
 
-                {/* ── Center content ── */}
-                <main className="relative z-10 flex flex-1 items-center justify-center px-4 py-12">
-                    <div className="login-card w-full max-w-sm">
+                {/* ── Centre ────────────────────────────────────────────────── */}
+                <main style={{
+                    position: 'relative', zIndex: 10, flex: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '48px 16px',
+                }}>
+                    <div style={{ width: '100%', maxWidth: '360px', animation: 'login-in 0.45s cubic-bezier(0.16,1,0.3,1) both' }}>
 
-                        {/* ── Shield icon hero ── */}
-                        <div className="mb-8 flex flex-col items-center gap-4">
-
-                            <div className="text-center">
-                                <h1
-                                    className="text-2xl font-bold tracking-tight"
-                                    style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
-                                >
-                                    Security Operations
-                                </h1>
-                                <p className="mt-1 text-sm" style={{ color: isDark ? '#4a7a8a' : '#64748b' }}>
-                                    Sign in to access your SOC platform
-                                </p>
-                            </div>
+                        {/* ── Hero ── */}
+                        <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+                            <h1 style={{
+                                fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em',
+                                color: isDark ? '#f1f5f9' : '#0f172a', margin: 0,
+                            }}>
+                                Security Operations
+                            </h1>
+                            <p style={{ marginTop: '6px', fontSize: '13px', color: isDark ? '#4a7a8a' : '#64748b' }}>
+                                Sign in to access your SOC platform
+                            </p>
                         </div>
 
-                        {/* ── Login card ── */}
-                        <div
-                            className="overflow-hidden rounded-2xl"
-                            style={{
-                                ...surface,
-                                boxShadow: isDark
-                                    ? '0 24px 64px rgba(0,0,0,0.4), 0 0 0 1px rgba(27,38,59,0.8)'
-                                    : '0 24px 64px rgba(0,0,0,0.08)',
-                            }}
-                        >
-                            {/* Top accent gradient */}
-                            <div
-                                className="h-px w-full"
-                                style={{ background: 'linear-gradient(90deg, transparent, #028090, #02c39a, transparent)' }}
-                            />
+                        {/* ── Card ── */}
+                        <div style={{
+                            ...surface, borderRadius: '18px', overflow: 'hidden',
+                            boxShadow: isDark
+                                ? '0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(27,38,59,0.8)'
+                                : '0 24px 64px rgba(0,0,0,0.08)',
+                        }}>
+                            {/* Accent bar */}
+                            <div style={{
+                                height: '1px', width: '100%',
+                                background: 'linear-gradient(90deg, transparent, #028090, #02c39a, transparent)',
+                            }} />
 
-                            <div className="px-6 py-7 space-y-5">
+                            <div style={{ padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
-                                {/* Error banner */}
+                                {/* Error */}
                                 {error && (
-                                    <div
-                                        className="flex items-start gap-3 rounded-xl px-4 py-3"
-                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
-                                    >
-                                        <AlertCircle size={15} className="shrink-0 mt-0.5" style={{ color: '#f87171' }} />
+                                    <div style={{
+                                        display: 'flex', alignItems: 'flex-start', gap: '10px',
+                                        padding: '12px 14px', borderRadius: '10px',
+                                        background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                                    }}>
+                                        <AlertCircle size={14} style={{ color: '#f87171', marginTop: '1px', flexShrink: 0 }} />
                                         <div>
-                                            <p className="text-xs font-semibold" style={{ color: '#f87171' }}>Authentication Error</p>
-                                            <p className="mt-0.5 text-[11px]" style={{ color: '#fca5a5' }}>{error}</p>
+                                            <p style={{ fontSize: '12px', fontWeight: 600, color: '#f87171', margin: 0 }}>
+                                                Authentication failed
+                                            </p>
+                                            <p style={{ fontSize: '11px', color: '#fca5a5', margin: '3px 0 0' }}>
+                                                {error}
+                                            </p>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Status message */}
-                                <div
-                                    className="rounded-xl px-4 py-3 text-sm text-center"
-                                    style={{
-                                        background: isDark ? 'rgba(27,38,59,0.4)' : '#f8fafc',
-                                        border: `1px solid ${isDark ? '#1b263b' : '#f1f5f9'}`,
-                                        color: isDark ? '#94a3b8' : '#64748b',
-                                    }}
-                                >
-                                    {isAuthenticated
-                                        ? 'You are signed in — redirecting…'
-                                        : 'Your session will be authenticated via Keycloak SSO'}
-                                </div>
+                                {/* Form */}
+                                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    <Field
+                                        label="Username"
+                                        id="username"
+                                        type="text"
+                                        value={username}
+                                        onChange={e => setUsername(e.target.value)}
+                                        isDark={isDark}
+                                        placeholder="your.username"
+                                    />
 
-                                {/* Sign in button */}
-                                <button
-                                    onClick={handleLogin}
-                                    disabled={isLoggingIn || isAuthenticated}
-                                    className="relative w-full overflow-hidden rounded-xl py-3 text-sm font-bold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
-                                    style={{
-                                        background: isLoggingIn || isAuthenticated
-                                            ? 'rgba(2,128,144,0.4)'
-                                            : 'linear-gradient(135deg, #028090 0%, #02c39a 100%)',
-                                        color: '#0d1b2a',
-                                    }}
-                                    onMouseEnter={e => {
-                                        if (!isLoggingIn && !isAuthenticated)
-                                            e.currentTarget.style.background = 'linear-gradient(135deg, #029aad 0%, #03d9ab 100%)'
-                                    }}
-                                    onMouseLeave={e => {
-                                        if (!isLoggingIn && !isAuthenticated)
-                                            e.currentTarget.style.background = 'linear-gradient(135deg, #028090 0%, #02c39a 100%)'
-                                    }}
-                                >
-                                    {/* Shimmer overlay on hover */}
-                                    <span className="relative z-10 flex items-center justify-center gap-2.5">
-                                        {isLoggingIn ? (
+                                    <Field
+                                        label="Password"
+                                        id="current-password"
+                                        type={showPwd ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        isDark={isDark}
+                                        placeholder="••••••••"
+                                        suffix={
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPwd(v => !v)}
+                                                style={{
+                                                    background: 'none', border: 'none', cursor: 'pointer',
+                                                    color: isDark ? '#4a7a8a' : '#94a3b8', padding: 0,
+                                                    display: 'flex', alignItems: 'center',
+                                                }}
+                                            >
+                                                {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                                            </button>
+                                        }
+                                    />
+
+                                    {/* Submit */}
+                                    <button
+                                        type="submit"
+                                        disabled={submitting || !username.trim() || !password}
+                                        style={{
+                                            width: '100%', padding: '11px',
+                                            borderRadius: '10px', border: 'none',
+                                            fontSize: '13px', fontWeight: 700,
+                                            cursor: submitting || !username.trim() || !password ? 'not-allowed' : 'pointer',
+                                            opacity: submitting || !username.trim() || !password ? 0.6 : 1,
+                                            background: 'linear-gradient(135deg, #028090 0%, #02c39a 100%)',
+                                            color: '#0d1b2a',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                            transition: 'opacity 0.15s, filter 0.15s',
+                                            marginTop: '4px',
+                                        }}
+                                        onMouseEnter={e => { if (!submitting) e.currentTarget.style.filter = 'brightness(1.1)' }}
+                                        onMouseLeave={e => { e.currentTarget.style.filter = 'none' }}
+                                    >
+                                        {submitting ? (
                                             <>
-                                                <Loader2 size={15} className="animate-spin" />
-                                                Redirecting to Keycloak…
+                                                <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                                                Authenticating…
                                             </>
-                                        ) : isAuthenticated ? (
-                                            'Already Signed In'
                                         ) : (
-                                            <>
-                                                <KeyRound size={15} />
-                                                Sign in with Keycloak
-                                            </>
+                                            'Sign In'
                                         )}
-                                    </span>
-                                </button>
+                                    </button>
+                                </form>
 
-                                {/* Provider info */}
-                                <div className="flex items-center justify-center gap-2">
-                                    <div className="h-px flex-1" style={{ background: isDark ? '#1b263b' : '#f1f5f9' }} />
-                                    <span className="text-[10px] font-medium" style={{ color: isDark ? '#2d4a5a' : '#cbd5e1' }}>
-                                        secured by keycloak
+                                {/* Footer info */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ flex: 1, height: '1px', background: isDark ? '#1b263b' : '#f1f5f9' }} />
+                                    <span style={{ fontSize: '10px', fontWeight: 500, color: isDark ? '#2d4a5a' : '#cbd5e1' }}>
+                                        enterprise sso · secured by keycloak
                                     </span>
-                                    <div className="h-px flex-1" style={{ background: isDark ? '#1b263b' : '#f1f5f9' }} />
+                                    <div style={{ flex: 1, height: '1px', background: isDark ? '#1b263b' : '#f1f5f9' }} />
                                 </div>
                             </div>
                         </div>
 
-                        {/* ── Footer meta ── */}
-                        <p className="mt-6 text-center text-[10px]" style={{ color: isDark ? '#1b263b' : '#cbd5e1' }}>
+                        <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '10px', color: isDark ? '#1b263b' : '#cbd5e1' }}>
                             EXIA SOC Platform · All rights reserved
                         </p>
                     </div>
@@ -279,5 +372,3 @@ function Login() {
         </>
     )
 }
-
-export default Login

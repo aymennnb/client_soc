@@ -5,7 +5,6 @@ import { usePermissions } from '../hooks/useAuth'
 import api from '../api'
 import DetailIncident from './Detailsincident'
 import DeleteModal from '../componants/DeleteModal'
-import UserSearchSelect from '../componants/UserSearchSelect'
 import Editincident from './Editincident'
 import Addincident from './Addincident'
 
@@ -20,10 +19,7 @@ import {
 } from 'lucide-react'
 
 // ─── useTheme ─────────────────────────────────────────────────────────────────
-//
-//  Reads data-theme attribute written by AuthenticatedLayout.
-//  Identical hook to Dashboard.jsx — single source of truth.
-//
+
 function useTheme() {
     const [isDark, setIsDark] = useState(() => {
         const attr = document.documentElement.getAttribute('data-theme')
@@ -36,7 +32,7 @@ function useTheme() {
             setIsDark(attr ? attr !== 'light' : !window.matchMedia('(prefers-color-scheme: light)').matches)
         })
         mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-        const mq = window.matchMedia('(prefers-color-scheme: light)')
+        const mq  = window.matchMedia('(prefers-color-scheme: light)')
         const mqh = (e) => { if (!document.documentElement.getAttribute('data-theme')) setIsDark(!e.matches) }
         mq.addEventListener('change', mqh)
         return () => { mo.disconnect(); mq.removeEventListener('change', mqh) }
@@ -45,162 +41,95 @@ function useTheme() {
 }
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
+
 const tokens = (isDark) => {
     const d = isDark
     return {
-        // Page & layout
-        bgPage:        d ? '#0d1b2a'                     : '#f8fafc',
-        bgCard:        d ? 'rgba(13,27,42,0.7)'          : 'rgba(255,255,255,0.97)',
-        bgCardHover:   d ? 'rgba(2,128,144,0.06)'        : 'rgba(2,128,144,0.04)',
-        bgSubtle:      d ? 'rgba(27,38,59,0.4)'          : 'rgba(241,245,249,0.8)',
-        bgThead:       d ? 'rgba(6,14,22,0.8)'           : 'rgba(248,250,252,0.95)',
-        bgInput:       d ? 'rgba(10,18,21,0.8)'          : '#ffffff',
-        bgAction:      d ? 'rgba(2,128,144,0.1)'         : 'rgba(2,128,144,0.07)',
-        bgActionHover: d ? 'rgba(2,128,144,0.18)'        : 'rgba(2,128,144,0.13)',
-        bgDanger:      d ? 'rgba(239,68,68,0.08)'        : 'rgba(220,38,38,0.06)',
-        bgDangerHover: d ? 'rgba(239,68,68,0.14)'        : 'rgba(220,38,38,0.1)',
-        bgSkeleton:    d ? 'rgba(27,38,59,0.8)'          : 'rgba(203,213,225,0.6)',
-        bgRowSep:      d ? 'rgba(27,38,59,0.6)'          : 'rgba(226,232,240,0.8)',
-        bgBtnDefault:  d ? 'rgba(27,38,59,0.4)'          : 'rgba(241,245,249,0.9)',
-        bgModal:       d ? 'rgba(10,18,28,0.98)'         : 'rgba(255,255,255,0.99)',
-        bgModalFooter: d ? 'rgba(6,14,22,0.4)'           : 'rgba(248,250,252,0.9)',
-        bgFilterActive:d ? 'rgba(2,195,154,0.12)'        : 'rgba(2,128,144,0.09)',
-        bgSuccessMsg:  d ? 'rgba(34,197,94,0.08)'        : 'rgba(22,163,74,0.07)',
-        bgErrorMsg:    d ? 'rgba(239,68,68,0.08)'        : 'rgba(220,38,38,0.06)',
+        bgPage:          d ? '#0d1b2a'                    : '#f8fafc',
+        bgCard:          d ? 'rgba(13,27,42,0.7)'         : 'rgba(255,255,255,0.97)',
+        bgCardHover:     d ? 'rgba(2,128,144,0.06)'       : 'rgba(2,128,144,0.04)',
+        bgSubtle:        d ? 'rgba(27,38,59,0.4)'         : 'rgba(241,245,249,0.8)',
+        bgThead:         d ? 'rgba(6,14,22,0.8)'          : 'rgba(248,250,252,0.95)',
+        bgInput:         d ? 'rgba(10,18,21,0.8)'         : '#ffffff',
+        bgAction:        d ? 'rgba(2,128,144,0.1)'        : 'rgba(2,128,144,0.07)',
+        bgActionHover:   d ? 'rgba(2,128,144,0.18)'       : 'rgba(2,128,144,0.13)',
+        bgDanger:        d ? 'rgba(239,68,68,0.08)'       : 'rgba(220,38,38,0.06)',
+        bgDangerHover:   d ? 'rgba(239,68,68,0.14)'       : 'rgba(220,38,38,0.1)',
+        bgSkeleton:      d ? 'rgba(27,38,59,0.8)'         : 'rgba(203,213,225,0.6)',
+        bgRowSep:        d ? 'rgba(27,38,59,0.6)'         : 'rgba(226,232,240,0.8)',
+        bgBtnDefault:    d ? 'rgba(27,38,59,0.4)'         : 'rgba(241,245,249,0.9)',
+        bgModal:         d ? 'rgba(10,18,28,0.98)'        : 'rgba(255,255,255,0.99)',
+        bgModalFooter:   d ? 'rgba(6,14,22,0.4)'          : 'rgba(248,250,252,0.9)',
+        bgFilterActive:  d ? 'rgba(2,195,154,0.12)'       : 'rgba(2,128,144,0.09)',
+        bgSuccessMsg:    d ? 'rgba(34,197,94,0.08)'       : 'rgba(22,163,74,0.07)',
+        bgErrorMsg:      d ? 'rgba(239,68,68,0.08)'       : 'rgba(220,38,38,0.06)',
 
-        // Borders
-        border:        d ? '#1b263b'                     : '#e2e8f0',
-        borderSubtle:  d ? 'rgba(27,38,59,0.6)'          : 'rgba(226,232,240,0.9)',
-        borderInput:   d ? '#1b263b'                     : '#cbd5e1',
-        borderAction:  d ? 'rgba(2,128,144,0.25)'        : 'rgba(2,128,144,0.3)',
-        borderDanger:  d ? 'rgba(239,68,68,0.2)'         : 'rgba(220,38,38,0.22)',
-        borderSuccess: d ? 'rgba(34,197,94,0.25)'        : 'rgba(22,163,74,0.3)',
-        borderError:   d ? 'rgba(239,68,68,0.2)'         : 'rgba(220,38,38,0.22)',
-        borderModal:   d ? '#1b263b'                     : '#e2e8f0',
+        border:          d ? '#1b263b'                    : '#e2e8f0',
+        borderSubtle:    d ? 'rgba(27,38,59,0.6)'         : 'rgba(226,232,240,0.9)',
+        borderInput:     d ? '#1b263b'                    : '#cbd5e1',
+        borderAction:    d ? 'rgba(2,128,144,0.25)'       : 'rgba(2,128,144,0.3)',
+        borderDanger:    d ? 'rgba(239,68,68,0.2)'        : 'rgba(220,38,38,0.22)',
+        borderSuccess:   d ? 'rgba(34,197,94,0.25)'       : 'rgba(22,163,74,0.3)',
+        borderError:     d ? 'rgba(239,68,68,0.2)'        : 'rgba(220,38,38,0.22)',
+        borderModal:     d ? '#1b263b'                    : '#e2e8f0',
 
-        // Text
-        textPrimary:   d ? '#f1f5f9'  : '#0f172a',
-        textSecondary: d ? '#e2e8f0'  : '#1e293b',
-        textMuted:     d ? '#94a3b8'  : '#475569',
-        textFaint:     d ? '#4a7a8a'  : '#64748b',
-        textGhost:     d ? '#2d4a5a'  : '#94a3b8',
-        textAction:    d ? '#028090'  : '#0369a1',
-        textDanger:    d ? '#f87171'  : '#dc2626',
-        textSuccess:   d ? '#4ade80'  : '#16a34a',
-        textInput:     d ? '#cbd5e1'  : '#1e293b',
-        textPlaceholder: d ? '#2d4a5a' : '#94a3b8',
+        textPrimary:     d ? '#f1f5f9'  : '#0f172a',
+        textSecondary:   d ? '#e2e8f0'  : '#1e293b',
+        textMuted:       d ? '#94a3b8'  : '#475569',
+        textFaint:       d ? '#4a7a8a'  : '#64748b',
+        textGhost:       d ? '#2d4a5a'  : '#94a3b8',
+        textAction:      d ? '#028090'  : '#0369a1',
+        textDanger:      d ? '#f87171'  : '#dc2626',
+        textSuccess:     d ? '#4ade80'  : '#16a34a',
+        textInput:       d ? '#cbd5e1'  : '#1e293b',
+        textPlaceholder: d ? '#2d4a5a'  : '#94a3b8',
 
-        // Shadow
-        shadowModal:   d ? '0 25px 60px rgba(0,0,0,0.5)'  : '0 25px 60px rgba(0,0,0,0.14)',
+        shadowModal:     d ? '0 25px 60px rgba(0,0,0,0.5)' : '0 25px 60px rgba(0,0,0,0.14)',
     }
 }
 
-// ─── Semantic badge configs (theme-aware) ─────────────────────────────────────
-//
-//  bg/text/border are functions of isDark so they resolve at render time.
-//  Light mode uses higher opacity bg and darker text for contrast on white.
-//
+// ─── Badge configs ────────────────────────────────────────────────────────────
+
 const SEV_STYLE = {
-    4: {
-        bg:     (d) => d ? 'rgba(239,68,68,0.10)'    : 'rgba(220,38,38,0.10)',
-        text:   (d) => d ? '#f87171'                 : '#7f1d1d',
-        border: (d) => d ? 'rgba(239,68,68,0.25)'    : 'rgba(220,38,38,0.3)',
-    },
-    3: {
-        bg:     (d) => d ? 'rgba(249,115,22,0.10)'   : 'rgba(234,88,12,0.10)',
-        text:   (d) => d ? '#fb923c'                 : '#7c2d12',
-        border: (d) => d ? 'rgba(249,115,22,0.25)'   : 'rgba(234,88,12,0.3)',
-    },
-    2: {
-        bg:     (d) => d ? 'rgba(245,158,11,0.10)'   : 'rgba(217,119,6,0.10)',
-        text:   (d) => d ? '#fbbf24'                 : '#78350f',
-        border: (d) => d ? 'rgba(245,158,11,0.25)'   : 'rgba(217,119,6,0.3)',
-    },
-    1: {
-        bg:     (d) => d ? 'rgba(34,197,94,0.10)'    : 'rgba(22,163,74,0.10)',
-        text:   (d) => d ? '#4ade80'                 : '#14532d',
-        border: (d) => d ? 'rgba(34,197,94,0.25)'    : 'rgba(22,163,74,0.3)',
-    },
-    0: {
-        bg:     (d) => d ? 'rgba(100,116,139,0.10)'  : 'rgba(100,116,139,0.10)',
-        text:   (d) => d ? '#94a3b8'                 : '#334155',
-        border: (d) => d ? 'rgba(100,116,139,0.25)'  : 'rgba(100,116,139,0.3)',
-    },
+    4: { bg: (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.10)',  text: (d) => d ? '#f87171' : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.25)'   : 'rgba(220,38,38,0.3)'  },
+    3: { bg: (d) => d ? 'rgba(249,115,22,0.10)'  : 'rgba(234,88,12,0.10)',  text: (d) => d ? '#fb923c' : '#7c2d12', border: (d) => d ? 'rgba(249,115,22,0.25)'  : 'rgba(234,88,12,0.3)'  },
+    2: { bg: (d) => d ? 'rgba(245,158,11,0.10)'  : 'rgba(217,119,6,0.10)',  text: (d) => d ? '#fbbf24' : '#78350f', border: (d) => d ? 'rgba(245,158,11,0.25)'  : 'rgba(217,119,6,0.3)'  },
+    1: { bg: (d) => d ? 'rgba(34,197,94,0.10)'   : 'rgba(22,163,74,0.10)',  text: (d) => d ? '#4ade80' : '#14532d', border: (d) => d ? 'rgba(34,197,94,0.25)'   : 'rgba(22,163,74,0.3)'  },
+    0: { bg: (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.10)',text: (d) => d ? '#94a3b8' : '#334155', border: (d) => d ? 'rgba(100,116,139,0.25)' : 'rgba(100,116,139,0.3)' },
 }
 
 const STAT_STYLE = {
-    open:        {
-        bg:     (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.09)',
-        text:   (d) => d ? '#f87171'                : '#7f1d1d',
-        border: (d) => d ? 'rgba(239,68,68,0.25)'   : 'rgba(220,38,38,0.28)',
-    },
-    in_progress: {
-        bg:     (d) => d ? 'rgba(56,189,248,0.10)'  : 'rgba(14,165,233,0.09)',
-        text:   (d) => d ? '#38bdf8'                : '#0c4a6e',
-        border: (d) => d ? 'rgba(56,189,248,0.25)'  : 'rgba(14,165,233,0.28)',
-    },
-    resolved:    {
-        bg:     (d) => d ? 'rgba(34,197,94,0.10)'   : 'rgba(22,163,74,0.09)',
-        text:   (d) => d ? '#4ade80'                : '#14532d',
-        border: (d) => d ? 'rgba(34,197,94,0.25)'   : 'rgba(22,163,74,0.28)',
-    },
-    closed:      {
-        bg:     (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)',
-        text:   (d) => d ? '#94a3b8'               : '#334155',
-        border: (d) => d ? 'rgba(100,116,139,0.25)' : 'rgba(100,116,139,0.28)',
-    },
+    open:        { bg: (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.09)',  text: (d) => d ? '#f87171' : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.25)'   : 'rgba(220,38,38,0.28)'  },
+    in_progress: { bg: (d) => d ? 'rgba(56,189,248,0.10)'  : 'rgba(14,165,233,0.09)', text: (d) => d ? '#38bdf8' : '#0c4a6e', border: (d) => d ? 'rgba(56,189,248,0.25)'  : 'rgba(14,165,233,0.28)' },
+    resolved:    { bg: (d) => d ? 'rgba(34,197,94,0.10)'   : 'rgba(22,163,74,0.09)',  text: (d) => d ? '#4ade80' : '#14532d', border: (d) => d ? 'rgba(34,197,94,0.25)'   : 'rgba(22,163,74,0.28)'  },
+    closed:      { bg: (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)',text: (d) => d ? '#94a3b8' : '#334155', border: (d) => d ? 'rgba(100,116,139,0.25)' : 'rgba(100,116,139,0.28)'},
 }
 
 const SRC_STYLE = {
-    wazuh:  {
-        bg:     (d) => d ? 'rgba(2,195,154,0.08)'   : 'rgba(5,150,105,0.08)',
-        text:   (d) => d ? '#02c39a'               : '#065f46',
-        border: (d) => d ? 'rgba(2,195,154,0.2)'    : 'rgba(5,150,105,0.25)',
-    },
-    manual: {
-        bg:     (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)',
-        text:   (d) => d ? '#94a3b8'               : '#334155',
-        border: (d) => d ? 'rgba(100,116,139,0.2)'  : 'rgba(100,116,139,0.28)',
-    },
+    wazuh:  { bg: (d) => d ? 'rgba(2,195,154,0.08)'   : 'rgba(5,150,105,0.08)',  text: (d) => d ? '#02c39a' : '#065f46', border: (d) => d ? 'rgba(2,195,154,0.2)'   : 'rgba(5,150,105,0.25)'  },
+    manual: { bg: (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)',text: (d) => d ? '#94a3b8' : '#334155', border: (d) => d ? 'rgba(100,116,139,0.2)'  : 'rgba(100,116,139,0.28)'},
 }
 
 const PRIORITY_LABELS = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' }
+const PAGE_SIZE_OPTIONS = [5, 10, 25, 50]
 
 // ─── Primitives ───────────────────────────────────────────────────────────────
 
 function Card({ children, className = '', style = {}, tk }) {
     return (
-        <div
-            className={`rounded-xl ${className}`}
-            style={{ background: tk.bgCard, border: `1px solid ${tk.border}`, ...style }}
-        >
+        <div className={`rounded-xl ${className}`}
+            style={{ background: tk.bgCard, border: `1px solid ${tk.border}`, ...style }}>
             {children}
         </div>
     )
 }
 
-function SectionTitle({ label, meta, tk }) {
-    return (
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-                <div className="h-3.5 w-0.5 rounded-full" style={{ background: '#02c39a' }} />
-                <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>
-                    {label}
-                </span>
-            </div>
-            {meta && <span className="text-[10px]" style={{ color: tk.textGhost }}>{meta}</span>}
-        </div>
-    )
-}
-
-function StatCard({ label, value, accent, tone, sub, tk }) {
+function StatCard({ label, value, tone, tk }) {
     return (
         <Card tk={tk} className="relative overflow-hidden p-5 flex flex-col gap-2">
-            <div
-                className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-full opacity-10"/>
+            <div className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-full opacity-10" />
             <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>{label}</span>
             <span className="text-2xl font-bold tabular-nums" style={{ color: tone }}>{value ?? '—'}</span>
-            {sub && <span className="text-[10px]" style={{ color: tk.textGhost }}>{sub}</span>}
         </Card>
     )
 }
@@ -209,10 +138,11 @@ function Skeleton({ rows = 4, tk }) {
     return (
         <div className="space-y-px">
             {Array.from({ length: rows }).map((_, i) => (
-                <div key={i} className="flex gap-4 px-4 py-3 animate-pulse" style={{ borderBottom: `1px solid ${tk.borderSubtle}` }}>
+                <div key={i} className="flex gap-4 px-4 py-3 animate-pulse"
+                    style={{ borderBottom: `1px solid ${tk.borderSubtle}` }}>
                     <div className="h-3 w-1/3 rounded-md" style={{ background: tk.bgSkeleton }} />
-                    <div className="h-3 w-16 rounded-md" style={{ background: tk.bgSkeleton }} />
-                    <div className="h-3 w-20 rounded-md" style={{ background: tk.bgSkeleton }} />
+                    <div className="h-3 w-16 rounded-md"  style={{ background: tk.bgSkeleton }} />
+                    <div className="h-3 w-20 rounded-md"  style={{ background: tk.bgSkeleton }} />
                 </div>
             ))}
         </div>
@@ -225,38 +155,41 @@ function PaginationBar({ currentPage, totalPages, onPage, tk }) {
         const p = i + Math.max(1, currentPage - 3)
         return p <= totalPages ? p : null
     }).filter(Boolean)
-
     const base     = 'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-150'
-    const inactive = { background: 'transparent',              border: `1px solid ${tk.border}`,                  color: tk.textFaint   }
-    const active   = { background: 'rgba(2,195,154,0.10)',     border: '1px solid rgba(2,195,154,0.3)',            color: '#02c39a'      }
+    const inactive = { background: 'transparent',          border: `1px solid ${tk.border}`,       color: tk.textFaint }
+    const active   = { background: 'rgba(2,195,154,0.10)', border: '1px solid rgba(2,195,154,0.3)', color: '#02c39a'   }
     const dis      = { opacity: 0.3, cursor: 'not-allowed' }
     const hov      = { border: '1px solid rgba(2,128,144,0.35)', color: '#02c39a' }
-
     return (
         <div className="flex flex-wrap items-center justify-center gap-1.5">
-            <button onClick={() => onPage(1)} disabled={currentPage === 1} className={base} style={{ ...inactive, ...(currentPage === 1 ? dis : {}) }}
+            <button onClick={() => onPage(1)} disabled={currentPage === 1} className={base}
+                style={{ ...inactive, ...(currentPage === 1 ? dis : {}) }}
                 onMouseEnter={e => currentPage !== 1 && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== 1 && Object.assign(e.currentTarget.style, inactive)}>
                 <ChevronLeft size={12} className="inline" /><ChevronLeft size={12} className="inline -ml-1.5" />
             </button>
-            <button onClick={() => onPage(currentPage - 1)} disabled={currentPage === 1} className={base} style={{ ...inactive, ...(currentPage === 1 ? dis : {}) }}
+            <button onClick={() => onPage(currentPage - 1)} disabled={currentPage === 1} className={base}
+                style={{ ...inactive, ...(currentPage === 1 ? dis : {}) }}
                 onMouseEnter={e => currentPage !== 1 && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== 1 && Object.assign(e.currentTarget.style, inactive)}>
                 <ChevronLeft size={12} className="inline" /> Prev
             </button>
             {pages.map(p => (
-                <button key={p} onClick={() => onPage(p)} className={base} style={p === currentPage ? active : inactive}
+                <button key={p} onClick={() => onPage(p)} className={base}
+                    style={p === currentPage ? active : inactive}
                     onMouseEnter={e => p !== currentPage && Object.assign(e.currentTarget.style, hov)}
                     onMouseLeave={e => p !== currentPage && Object.assign(e.currentTarget.style, inactive)}>
                     {p}
                 </button>
             ))}
-            <button onClick={() => onPage(currentPage + 1)} disabled={currentPage === totalPages} className={base} style={{ ...inactive, ...(currentPage === totalPages ? dis : {}) }}
+            <button onClick={() => onPage(currentPage + 1)} disabled={currentPage === totalPages} className={base}
+                style={{ ...inactive, ...(currentPage === totalPages ? dis : {}) }}
                 onMouseEnter={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, inactive)}>
                 Next <ChevronRight size={12} className="inline" />
             </button>
-            <button onClick={() => onPage(totalPages)} disabled={currentPage === totalPages} className={base} style={{ ...inactive, ...(currentPage === totalPages ? dis : {}) }}
+            <button onClick={() => onPage(totalPages)} disabled={currentPage === totalPages} className={base}
+                style={{ ...inactive, ...(currentPage === totalPages ? dis : {}) }}
                 onMouseEnter={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, inactive)}>
                 <ChevronRight size={12} className="inline" /><ChevronRight size={12} className="inline -ml-1.5" />
@@ -265,11 +198,6 @@ function PaginationBar({ currentPage, totalPages, onPage, tk }) {
     )
 }
 
-// ─── InlineBadge ──────────────────────────────────────────────────────────────
-//
-//  cfg is now an object of functions: { bg(isDark), text(isDark), border(isDark) }
-//  Falls back to neutral style when cfg is undefined.
-//
 function InlineBadge({ label, cfg, isDark }) {
     const bg     = typeof cfg?.bg     === 'function' ? cfg.bg(isDark)     : (cfg?.bg     ?? 'rgba(100,116,139,0.10)')
     const text   = typeof cfg?.text   === 'function' ? cfg.text(isDark)   : (cfg?.text   ?? '#94a3b8')
@@ -283,11 +211,23 @@ function InlineBadge({ label, cfg, isDark }) {
 }
 
 // ─── Create Ticket Modal ──────────────────────────────────────────────────────
+//
+// Remplace UserSearchSelect par un select département chargé dynamiquement
+// depuis GET /tickets/departments (Keycloak Groups).
 
-const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreated, tk, isDark }) => {
-    const [form, setForm] = useState({ incident_id: incidentId || '', name: '', assigned_to: '', priority: 'medium', notes: '' })
-    const [loading, setLoading] = useState(false)
-    const [error,   setError]   = useState(null)
+const CreateTicketModal = ({ incidentId, incidentTitle, onClose, onCreated, tk, isDark }) => {
+    const [form, setForm] = useState({
+        incident_id:     incidentId || '',
+        name:            '',
+        department_id:   '',
+        department_name: '',
+        priority:        'medium',
+        notes:           '',
+    })
+    const [departments, setDepartments] = useState([])
+    const [deptLoading, setDeptLoading] = useState(true)
+    const [loading,     setLoading]     = useState(false)
+    const [error,       setError]       = useState(null)
 
     const inputStyle = {
         background:   tk.bgInput,
@@ -311,11 +251,24 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
         marginBottom:  '6px',
     }
 
+    // Charger les groupes Keycloak comme départements
+    useEffect(() => {
+        api.get('/tickets/departments')
+            .then(r => { setDepartments(r.data.departments || []); setDeptLoading(false) })
+            .catch(() => { setError('Failed to load departments.'); setDeptLoading(false) })
+    }, [])
+
     const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
+    const handleDeptChange = (e) => {
+        const id   = e.target.value
+        const dept = departments.find(d => d.id === id)
+        setForm(f => ({ ...f, department_id: id, department_name: dept?.name || '' }))
+    }
+
     const submit = async () => {
-        if (!form.name.trim()) { setError('Please enter a ticket name.'); return }
-        if (!form.assigned_to) { setError('Please assign a user.'); return }
+        if (!form.name.trim())   { setError('Please enter a ticket name.'); return }
+        if (!form.department_id) { setError('Please select a department.'); return }
         setLoading(true); setError(null)
         try {
             const { data } = await api.post('/tickets', form)
@@ -330,7 +283,9 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
             <div className="w-full max-w-lg mx-4 overflow-hidden rounded-xl"
                 style={{ background: tk.bgModal, border: `1px solid ${tk.borderModal}`, boxShadow: tk.shadowModal }}>
 
-                <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: `1px solid ${tk.border}` }}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4"
+                    style={{ borderBottom: `1px solid ${tk.border}` }}>
                     <div className="flex items-center gap-3">
                         <div className="flex h-7 w-7 items-center justify-center rounded-lg"
                             style={{ background: tk.bgAction, border: `1px solid ${tk.borderAction}` }}>
@@ -354,6 +309,7 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
                     </button>
                 </div>
 
+                {/* Body */}
                 <div className="px-6 py-5 space-y-4">
                     {error && (
                         <div className="rounded-lg px-4 py-2.5 text-sm"
@@ -361,6 +317,8 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
                             {error}
                         </div>
                     )}
+
+                    {/* Ticket name */}
                     <div>
                         <label style={labelStyle}>Ticket Name *</label>
                         <input
@@ -372,16 +330,37 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
                             style={inputStyle}
                         />
                     </div>
+
+                    {/* Department — chargé dynamiquement depuis Keycloak */}
                     <div>
-                        <label style={labelStyle}>Assign to *</label>
-                        <UserSearchSelect users={users} value={form.assigned_to} onChange={handle} className="" />
-                    </div>
-                    <div>
-                        <label style={labelStyle}>Priority</label>
-                        <select name="priority" value={form.priority} onChange={handle} style={inputStyle} className="inc-input">
-                            {Object.entries(PRIORITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                        <label style={labelStyle}>Department *</label>
+                        <select
+                            name="department_id"
+                            value={form.department_id}
+                            onChange={handleDeptChange}
+                            style={{ ...inputStyle, color: deptLoading ? tk.textFaint : tk.textInput }}
+                            className="inc-input"
+                            disabled={deptLoading}
+                        >
+                            <option value="">{deptLoading ? 'Loading departments…' : 'Select a department…'}</option>
+                            {departments.map(dept => (
+                                <option key={dept.id} value={dept.id}>{dept.name}</option>
+                            ))}
                         </select>
                     </div>
+
+                    {/* Priority */}
+                    <div>
+                        <label style={labelStyle}>Priority</label>
+                        <select name="priority" value={form.priority} onChange={handle}
+                            style={inputStyle} className="inc-input">
+                            {Object.entries(PRIORITY_LABELS).map(([v, l]) => (
+                                <option key={v} value={v}>{l}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Notes */}
                     <div>
                         <label style={labelStyle}>Notes</label>
                         <textarea name="notes" value={form.notes} onChange={handle} rows={3}
@@ -391,6 +370,7 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
                     </div>
                 </div>
 
+                {/* Footer */}
                 <div className="flex justify-end gap-2 px-6 py-4"
                     style={{ borderTop: `1px solid ${tk.border}`, background: tk.bgModalFooter }}>
                     <button onClick={onClose}
@@ -400,11 +380,11 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
                         Cancel
                     </button>
-                    <button onClick={submit} disabled={loading}
+                    <button onClick={submit} disabled={loading || deptLoading}
                         className="rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150"
-                        style={{ background: '#02c39a', color: '#0d1b2a', opacity: loading ? 0.6 : 1 }}
-                        onMouseEnter={e => !loading && (e.currentTarget.style.background = '#02e0b1')}
-                        onMouseLeave={e => !loading && (e.currentTarget.style.background = '#02c39a')}>
+                        style={{ background: '#02c39a', color: '#0d1b2a', opacity: (loading || deptLoading) ? 0.6 : 1 }}
+                        onMouseEnter={e => !(loading || deptLoading) && (e.currentTarget.style.background = '#02e0b1')}
+                        onMouseLeave={e => !(loading || deptLoading) && (e.currentTarget.style.background = '#02c39a')}>
                         {loading ? 'Creating…' : 'Create Ticket'}
                     </button>
                 </div>
@@ -412,8 +392,6 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
         </div>
     )
 }
-
-const PAGE_SIZE_OPTIONS = [5, 10, 25, 50]
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -425,7 +403,6 @@ function Incidents() {
     const isDark = useTheme()
     const tk     = useMemo(() => tokens(isDark), [isDark])
 
-    // Derived input/label styles — computed from tk so they react to theme changes
     const inputStyle = useMemo(() => ({
         background:   tk.bgInput,
         border:       `1px solid ${tk.borderInput}`,
@@ -459,7 +436,6 @@ function Incidents() {
     const [deleteTarget,     setDeleteTarget]     = useState(null)
     const [showTicketModal,  setShowTicketModal]  = useState(false)
     const [ticketIncident,   setTicketIncident]   = useState(null)
-    const [users,            setUsers]            = useState([])
     const [showFilters,      setShowFilters]      = useState(false)
 
     const [currentPage, setCurrentPage] = useState(1)
@@ -473,23 +449,24 @@ function Incidents() {
     const [filterTimeTo,   setFilterTimeTo]   = useState('')
     const [filterTitle,    setFilterTitle]    = useState('')
 
-    const [showAddIncident,    setShowAddIncident]    = useState(false)
-    const [editingIncidentId,  setEditingIncidentId]  = useState(null)
+    const [showAddIncident,   setShowAddIncident]   = useState(false)
+    const [editingIncidentId, setEditingIncidentId] = useState(null)
 
-    const fetchStats = () => { api.get('/incidents/stats').then(r => setStats(r.data)).catch(() => {}) }
+    const fetchStats = () => {
+        api.get('/incidents/stats').then(r => setStats(r.data)).catch(() => {})
+    }
     useEffect(() => { fetchStats() }, [])
-    useEffect(() => { api.get('/users').then(r => setUsers(r.data || [])).catch(() => {}) }, [])
 
     const fetchIncidents = useCallback(async () => {
         setLoading(true); setError('')
         try {
             const params = {}
-            if (filterStatus)        params.status     = filterStatus
-            if (filterSeverity !== '') params.severity  = filterSeverity
-            if (filterSource)        params.source     = filterSource
-            if (filterAgent)         params.agent_name = filterAgent
-            if (filterTimeFrom)      params.time_from  = filterTimeFrom
-            if (filterTimeTo)        params.time_to    = filterTimeTo
+            if (filterStatus)          params.status     = filterStatus
+            if (filterSeverity !== '') params.severity   = filterSeverity
+            if (filterSource)          params.source     = filterSource
+            if (filterAgent)           params.agent_name = filterAgent
+            if (filterTimeFrom)        params.time_from  = filterTimeFrom
+            if (filterTimeTo)          params.time_to    = filterTimeTo
             const res = await api.get('/incidents', { params })
             setIncidents(res.data.incidents || [])
             setCurrentPage(1)
@@ -536,19 +513,29 @@ function Incidents() {
 
     const handleViewDetails = async (id) => {
         setDetailLoading(true); setSelectedIncident(null)
-        try { const res = await api.get(`/incidents/${id}`); setSelectedIncident(res.data) }
-        catch (err) { alert(err.response?.data?.message || 'Failed to load details.') }
-        finally { setDetailLoading(false) }
+        try {
+            const res = await api.get(`/incidents/${id}`)
+            setSelectedIncident(res.data)
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to load details.')
+        } finally {
+            setDetailLoading(false)
+        }
     }
 
     const handleDeleteConfirm = async () => {
         if (!deleteTarget) return
-        try { await api.delete(`/incidents/${deleteTarget.id}`); setDeleteTarget(null); fetchIncidents(); fetchStats() }
-        catch (err) { alert(err.response?.data?.message || 'Delete failed.') }
+        try {
+            await api.delete(`/incidents/${deleteTarget.id}`)
+            setDeleteTarget(null)
+            fetchIncidents(); fetchStats()
+        } catch (err) {
+            alert(err.response?.data?.message || 'Delete failed.')
+        }
     }
 
-    const handleCreateTicket = (incident) => { setTicketIncident(incident); setShowTicketModal(true) }
-    const handleTicketCreated = () => { setShowTicketModal(false); setTicketIncident(null) }
+    const handleCreateTicket  = (incident) => { setTicketIncident(incident); setShowTicketModal(true) }
+    const handleTicketCreated = ()          => { setShowTicketModal(false);   setTicketIncident(null)  }
 
     const totalOpen     = stats?.byStatus?.find(s => s._id === 'open')?.count ?? 0
     const totalResolved = stats?.byStatus?.find(s => s._id === 'resolved' || s._id === 'closed')?.count ?? 0
@@ -574,21 +561,17 @@ function Incidents() {
         <>
             <style>{`
                 @keyframes inc-fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-                .inc-page { animation: inc-fadein 0.35s ease-out both; }
+                .inc-page  { animation: inc-fadein 0.35s ease-out both; }
                 .inc-input:focus { border-color: rgba(2,195,154,0.5) !important; box-shadow: 0 0 0 3px rgba(2,195,154,0.08) !important; }
                 .inc-row:hover { background: var(--inc-row-hover) !important; }
             `}</style>
-
-            {/* CSS var for row hover — can't use tk directly in .inc-row:hover rule */}
             <style>{`:root { --inc-row-hover: ${tk.bgCardHover}; }`}</style>
 
             <div className="inc-page space-y-6" style={{ color: tk.textSecondary }}>
 
                 {/* ── Header ── */}
-                <div
-                    className="flex flex-wrap items-end justify-between gap-4"
-                    style={{ borderBottom: `1px solid ${tk.border}`, paddingBottom: '20px' }}
-                >
+                <div className="flex flex-wrap items-end justify-between gap-4"
+                    style={{ borderBottom: `1px solid ${tk.border}`, paddingBottom: '20px' }}>
                     <div>
                         <h2 className="text-lg font-semibold tracking-tight" style={{ color: tk.textPrimary }}>
                             Incident Management
@@ -599,15 +582,13 @@ function Incidents() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {(isAdmin || can('SYNC_INCIDENTS')) && (
-                            <button
-                                onClick={handleSync} disabled={syncing}
+                            <button onClick={handleSync} disabled={syncing}
                                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-150"
                                 style={{ background: 'transparent', border: `1px solid ${tk.borderAction}`, color: tk.textAction, opacity: syncing ? 0.6 : 1 }}
                                 onMouseEnter={e => !syncing && (e.currentTarget.style.background = tk.bgAction)}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                            >
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 {syncing
-                                    ? <><span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />Syncing…</>
+                                    ? <><span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" /> Syncing…</>
                                     : <><RefreshCcw size={13} /> Wazuh Sync</>
                                 }
                             </button>
@@ -631,7 +612,6 @@ function Incidents() {
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                         <StatCard label="Open"     value={totalOpen}     tone="#f59e0b" tk={tk} />
                         <StatCard label="Resolved" value={totalResolved} tone="#22c55e" tk={tk} />
-                        {/* FIX: tone="red" (CSS string) replaced with valid hex — consistent with design system */}
                         <StatCard label="Critical" value={totalCritical} tone="#ef4444" tk={tk} />
                         <StatCard label="High"     value={totalHigh}     tone="#fb923c" tk={tk} />
                         <StatCard label="Medium"   value={totalMedium}   tone="#f59e0b" tk={tk} />
@@ -640,11 +620,9 @@ function Incidents() {
 
                 {/* ── Filters ── */}
                 <Card tk={tk} className="overflow-hidden">
-                    <div
-                        className="flex items-center justify-between px-5 py-3 cursor-pointer select-none"
+                    <div className="flex items-center justify-between px-5 py-3 cursor-pointer select-none"
                         onClick={() => setShowFilters(f => !f)}
-                        style={{ borderBottom: showFilters ? `1px solid ${tk.border}` : 'none' }}
-                    >
+                        style={{ borderBottom: showFilters ? `1px solid ${tk.border}` : 'none' }}>
                         <div className="flex items-center gap-2">
                             <SlidersHorizontal size={13} style={{ color: tk.textFaint }} />
                             <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>
@@ -739,12 +717,10 @@ function Incidents() {
                     </p>
                     <div className="flex items-center gap-2">
                         <span className="text-xs" style={{ color: tk.textFaint }}>Rows:</span>
-                        <select
-                            className="rounded-lg px-2 py-1 text-xs"
+                        <select className="rounded-lg px-2 py-1 text-xs"
                             style={{ background: tk.bgInput, border: `1px solid ${tk.border}`, color: tk.textMuted, outline: 'none' }}
                             value={pageSize}
-                            onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
-                        >
+                            onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}>
                             {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
                     </div>
@@ -807,12 +783,16 @@ function Incidents() {
                                         return (
                                             <tr key={incident._id} className="inc-row"
                                                 style={{ background: 'transparent', borderBottom: `1px solid ${tk.borderSubtle}`, transition: 'background 0.15s' }}>
+
+                                                {/* Title */}
                                                 <td className="px-4 py-3 max-w-[240px]">
                                                     <span className="block truncate text-sm font-medium" title={incident.title}
                                                         style={{ color: tk.textSecondary }}>
                                                         {incident.title}
                                                     </span>
                                                 </td>
+
+                                                {/* Severity */}
                                                 <td className="px-4 py-3">
                                                     <InlineBadge
                                                         label={SEVERITY_LABELS[sevNum] ?? sevNum}
@@ -820,6 +800,8 @@ function Incidents() {
                                                         isDark={isDark}
                                                     />
                                                 </td>
+
+                                                {/* Status */}
                                                 <td className="px-4 py-3">
                                                     <InlineBadge
                                                         label={STATUS_LABELS[incident.status] ?? incident.status}
@@ -827,6 +809,8 @@ function Incidents() {
                                                         isDark={isDark}
                                                     />
                                                 </td>
+
+                                                {/* Source */}
                                                 <td className="px-4 py-3">
                                                     <InlineBadge
                                                         label={incident.source}
@@ -834,20 +818,27 @@ function Incidents() {
                                                         isDark={isDark}
                                                     />
                                                 </td>
+
+                                                {/* Agent */}
                                                 <td className="px-4 py-3">
                                                     <span className="font-mono text-xs" style={{ color: tk.textFaint }}>
                                                         {incident.agent_name ?? '—'}
                                                     </span>
                                                 </td>
+
+                                                {/* Timestamp */}
                                                 <td className="px-4 py-3">
                                                     <span className="text-xs" style={{ color: tk.textFaint }}>
                                                         {fmt(incident.timestamp)}
                                                     </span>
                                                 </td>
+
+                                                {/* Actions */}
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center gap-1.5">
                                                         {(isAdmin || can('CREATE_TICKET')) && (
-                                                            <button title="Ticket" onClick={() => handleCreateTicket(incident)}
+                                                            <button title="Create Ticket"
+                                                                onClick={() => handleCreateTicket(incident)}
                                                                 className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
                                                                 style={{ background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted }}
                                                                 onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, border: `1px solid ${tk.borderAction}`, color: '#02c39a' })}
@@ -856,7 +847,8 @@ function Incidents() {
                                                             </button>
                                                         )}
                                                         {(isAdmin || can('UPDATE_INCIDENT')) && (
-                                                            <button title="Edit" onClick={() => setEditingIncidentId(incident._id)}
+                                                            <button title="Edit"
+                                                                onClick={() => setEditingIncidentId(incident._id)}
                                                                 className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
                                                                 style={{ background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted }}
                                                                 onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, border: `1px solid ${tk.borderAction}`, color: '#02c39a' })}
@@ -865,7 +857,8 @@ function Incidents() {
                                                             </button>
                                                         )}
                                                         {(isAdmin || can('DELETE_INCIDENT')) && (
-                                                            <button title="Delete" onClick={() => setDeleteTarget({ id: incident._id, title: incident.title })}
+                                                            <button title="Delete"
+                                                                onClick={() => setDeleteTarget({ id: incident._id, title: incident.title })}
                                                                 className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
                                                                 style={{ background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger }}
                                                                 onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgDangerHover, border: `1px solid rgba(239,68,68,0.35)`, color: isDark ? '#fca5a5' : '#b91c1c' })}
@@ -884,6 +877,12 @@ function Incidents() {
                     </Card>
                 )}
 
+                {/* ── Pagination ── */}
+                {!loading && filtered.length > pageSize && (
+                    <PaginationBar currentPage={currentPage} totalPages={totalPages} onPage={setCurrentPage} tk={tk} />
+                )}
+
+                {/* ── Sub-components ── */}
                 {showAddIncident && (
                     <Addincident onClose={() => setShowAddIncident(false)} onSaved={() => fetchIncidents()} />
                 )}
@@ -894,11 +893,6 @@ function Incidents() {
                         onClose={() => setEditingIncidentId(null)}
                         onSaved={() => fetchIncidents()}
                     />
-                )}
-
-                {/* ── Pagination ── */}
-                {!loading && filtered.length > pageSize && (
-                    <PaginationBar currentPage={currentPage} totalPages={totalPages} onPage={setCurrentPage} tk={tk} />
                 )}
 
                 {/* ── Modals ── */}
@@ -923,7 +917,6 @@ function Incidents() {
                     <CreateTicketModal
                         incidentId={ticketIncident._id}
                         incidentTitle={ticketIncident.title}
-                        users={users}
                         onClose={handleTicketCreated}
                         onCreated={handleTicketCreated}
                         tk={tk}

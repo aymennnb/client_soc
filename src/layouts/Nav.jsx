@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import { useKeycloak } from '../context/KeycloakContext'
+import { useKeycloak } from '../context/AuthContext'
 import api from '../api'
 import {
     LayoutDashboard,

@@ -106,6 +106,11 @@ const ACTION_CONFIG = {
     ACTIVATE_USER:    { bg: (d) => d ? 'rgba(34,197,94,0.10)'   : 'rgba(22,163,74,0.09)',   text: (d) => d ? '#4ade80'  : '#14532d', border: (d) => d ? 'rgba(34,197,94,0.28)'   : 'rgba(22,163,74,0.28)',   icon: UserCheck  },
     DEACTIVATE_USER:  { bg: (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.09)',   text: (d) => d ? '#f87171'  : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.28)'   : 'rgba(220,38,38,0.28)',   icon: UserX      },
     ASSIGN_ROLE:      { bg: (d) => d ? 'rgba(245,158,11,0.10)'  : 'rgba(217,119,6,0.09)',   text: (d) => d ? '#fbbf24'  : '#78350f', border: (d) => d ? 'rgba(245,158,11,0.28)'  : 'rgba(217,119,6,0.28)',   icon: Lock       },
+    LOGIN_SUCCESS: { bg: (d) => d ? 'rgba(34,197,94,0.10)'  : 'rgba(22,163,74,0.09)',  text: (d) => d ? '#4ade80' : '#14532d', border: (d) => d ? 'rgba(34,197,94,0.28)'  : 'rgba(22,163,74,0.28)',  icon: LogIn  },
+    LOGIN_FAILED:  { bg: (d) => d ? 'rgba(239,68,68,0.10)'  : 'rgba(220,38,38,0.09)',  text: (d) => d ? '#f87171' : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.28)'  : 'rgba(220,38,38,0.28)',  icon: AlertTriangle },
+    LOGOUT:        { bg: (d) => d ? 'rgba(100,116,139,0.10)': 'rgba(100,116,139,0.09)',text: (d) => d ? '#94a3b8' : '#334155', border: (d) => d ? 'rgba(100,116,139,0.28)': 'rgba(100,116,139,0.28)', icon: LogOut },
+    ASSIGN_PERMISSION:   { bg: (d) => d ? 'rgba(34,197,94,0.10)'  : 'rgba(22,163,74,0.09)',  text: (d) => d ? '#4ade80' : '#14532d', border: (d) => d ? 'rgba(34,197,94,0.28)'  : 'rgba(22,163,74,0.28)',  icon: Lock },
+    UNASSIGN_PERMISSION: { bg: (d) => d ? 'rgba(239,68,68,0.10)'  : 'rgba(220,38,38,0.09)',  text: (d) => d ? '#f87171' : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.28)'  : 'rgba(220,38,38,0.28)',  icon: Lock },
 }
 
 const ACTION_FALLBACK = { bg: (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)', text: (d) => d ? '#94a3b8' : '#334155', border: (d) => d ? 'rgba(100,116,139,0.25)' : 'rgba(100,116,139,0.28)', icon: Activity }
@@ -115,6 +120,7 @@ const TARGET_TYPE_CONFIG = {
     Vulnerability: { bg: (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.09)',  text: (d) => d ? '#f87171' : '#7f1d1d', border: (d) => d ? 'rgba(239,68,68,0.25)'   : 'rgba(220,38,38,0.28)',  icon: Bug          },
     Ticket:        { bg: (d) => d ? 'rgba(56,189,248,0.10)'  : 'rgba(14,165,233,0.09)', text: (d) => d ? '#38bdf8' : '#0c4a6e', border: (d) => d ? 'rgba(56,189,248,0.25)'  : 'rgba(14,165,233,0.28)', icon: Ticket       },
     User:          { bg: (d) => d ? 'rgba(168,85,247,0.10)'  : 'rgba(147,51,234,0.09)', text: (d) => d ? '#c084fc' : '#581c87', border: (d) => d ? 'rgba(168,85,247,0.25)'  : 'rgba(147,51,234,0.28)', icon: User         },
+    Authentication: { bg: (d) => d ? 'rgba(245,158,11,0.10)' : 'rgba(217,119,6,0.09)', text: (d) => d ? '#fbbf24' : '#78350f', border: (d) => d ? 'rgba(245,158,11,0.25)' : 'rgba(217,119,6,0.28)', icon: Lock },
 }
 
 const TARGET_FALLBACK = { bg: (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)', text: (d) => d ? '#94a3b8' : '#334155', border: (d) => d ? 'rgba(100,116,139,0.25)' : 'rgba(100,116,139,0.28)', icon: FileWarning }
@@ -128,9 +134,9 @@ const STATUS_FALLBACK = { bg: (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,11
 
 // ─── All known actions & target types for filter dropdowns ───────────────────
 
-const ALL_ACTIONS = Object.keys(ACTION_CONFIG)
+const ALL_ACTIONS = [...Object.keys(ACTION_CONFIG)]
 
-const ALL_TARGET_TYPES = ['Incident', 'Vulnerability', 'Ticket', 'User']
+const ALL_TARGET_TYPES = ['Incident', 'Vulnerability', 'Ticket', 'User', 'Authentication']
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
