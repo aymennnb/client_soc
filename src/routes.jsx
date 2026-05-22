@@ -15,12 +15,15 @@ import Vulnerabilities      from './vulnerabilities/Vulnerabilities.jsx'
 import AddVulnerability     from './vulnerabilities/AddVulnerability.jsx'
 import EditVulnerability    from './vulnerabilities/EditVulnerability.jsx'
 import NessusSync           from './vulnerabilities/NessusSync.jsx'
+import LaunchScan           from './vulnerabilities/LaunchScan.jsx'
 
 import Incidents            from './incidents/Incidents.jsx'
 import AddIncident          from './incidents/Addincident.jsx'
 import EditIncident         from './incidents/Editincident.jsx'
 
 import Tickets         from './tickets/Tickets.jsx'
+
+import Journals         from './jornaux/Journaux.jsx'
 
 import Dashboard            from './Dashboard.jsx'
 
@@ -63,6 +66,7 @@ function AppRoutes() {
                     <Route path="/vulnerabilities/add" element={<AddVulnerability />} />
                     <Route path="/vulnerabilities/edit/:id" element={<EditVulnerability />} />
                     <Route path="/vulnerabilities/sync" element={<NessusSync />} />
+                    <Route path="/vulnerabilities/launch" element={<LaunchScan />} />
 
                     {/* Incidents */}
                     <Route path="/incidents" element={<Incidents />} />
@@ -84,10 +88,12 @@ function AppRoutes() {
                     <Route path="/users/:id/permissions" element={
                         <AdminRoute><UserPermissions /></AdminRoute>
                     } />
+                    <Route path="/jornaux" element={
+                        <AdminRoute><Journals /></AdminRoute>
+                    } />
                 </Route>
             ) : null}
 
-            {/* ── Fallback: All unmatched routes go to login ── */}
             <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     )

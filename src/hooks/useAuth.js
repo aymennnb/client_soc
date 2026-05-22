@@ -23,25 +23,21 @@ export function usePermissions() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Admin users have all permissions
         if (isAdmin) {
             setPermissions(['ALL'])
             setLoading(false)
             return
         }
 
-        // User not authenticated yet
         if (!userInfo?.id) {
             setPermissions([])
             setLoading(false)
             return
         }
 
-        // Fetch user permissions from backend (Keycloak roles)
         setLoading(true)
         api.get(`/users/${userInfo.id}/permissions`)
             .then(r => {
-                // API returns { permissions: ["VIEW_INCIDENTS", "VIEW_VULNERABILITIES", ...] }
                 const perms = r.data.permissions || []
                 console.log('[usePermissions] Loaded permissions:', perms)
                 setPermissions(perms)
@@ -54,7 +50,6 @@ export function usePermissions() {
     }, [userInfo?.id, isAdmin])
 
     const can = (permission) => {
-        // If still loading, assume no access (be safe)
         if (loading) return false
         if (!permissions) return false
         if (permissions.includes('ALL')) return true

@@ -8,13 +8,16 @@ import {
     Maximize2, Minimize2, Bell,
 } from 'lucide-react'
 
-// ─── Theme helpers ────────────────────────────────────────────────────────────
-
 const getInitialTheme = () => localStorage.getItem('theme') || 'dark'
+
 const applyTheme = (theme) => {
-    document.documentElement.classList.toggle('light-mode', theme === 'light')
+    // Single canonical signal: data-theme attribute on <html>
+    document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
 }
+
+// Apply immediately so data-theme is present before any child renders
+applyTheme(getInitialTheme())
 
 // ─── User Dropdown ────────────────────────────────────────────────────────────
 
@@ -190,7 +193,6 @@ function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
         }
     }
 
-    // Derive a readable page title from the current route
     const pageTitle = (() => {
         const path = location.pathname.split('/').filter(Boolean)
         if (!path.length) return 'Dashboard'
@@ -298,11 +300,31 @@ function Header({ theme, toggleTheme, onMenuToggle, isSidebarOpen }) {
 export default function AuthenticatedLayout() {
     const [theme, setTheme] = useState(getInitialTheme)
     const [sidebarOpen, setSidebarOpen] = useState(true)
-    const isDark = theme === 'dark'
 
+    // FIX: applyTheme now writes data-theme, so this effect correctly notifies
+    // Dashboard.useTheme()'s MutationObserver on every toggle.
     useEffect(() => { applyTheme(theme) }, [theme])
 
-    const toggleTheme  = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
+    // FIX: listen for theme changes dispatched by Settings.jsx ThemeSelector.
+    // Settings writes localStorage + data-theme directly (to avoid a second
+    // React state owner), then fires a StorageEvent so this component stays
+    // in sync — header icon, page background, and all inline styles update.
+    useEffect(() => {
+        const handler = (e) => {
+            if (e.key !== 'theme' || !e.newValue) return
+            const intent = e.newValue // 'light' | 'dark' | 'system'
+            const resolved = intent === 'system'
+                ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+                : intent
+            setTheme(resolved)
+        }
+        window.addEventListener('storage', handler)
+        return () => window.removeEventListener('storage', handler)
+    }, [])
+
+    const isDark = theme === 'dark'
+
+    const toggleTheme   = () => setTheme(t => t === 'dark' ? 'light' : 'dark')
     const toggleSidebar = () => setSidebarOpen(o => !o)
 
     return (
@@ -319,7 +341,7 @@ export default function AuthenticatedLayout() {
 
             {/* ── Main area ── */}
             <div
-                className="flex flex-1 flex-col overflow-hidden transition-all duration-250 ease-out"
+                className="flex flex-1 flex-col overflow-hidden"
                 style={{ paddingLeft: sidebarOpen ? '240px' : '0', transition: 'padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1)' }}
             >
                 {/* Header */}

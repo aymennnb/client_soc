@@ -15,124 +15,249 @@ import {
 } from './incidentConstants'
 import {
     Plus, RefreshCcw, SlidersHorizontal, X,
-    ChevronLeft, ChevronRight, Siren, Ticket,
+    ChevronLeft, ChevronRight, Siren,
+    Ticket, Pencil, Trash2
 } from 'lucide-react'
 
-// ─── Design primitives ────────────────────────────────────────────────────────
-
-const inputStyle = {
-    background: 'rgba(10,18,21,0.8)',
-    border: '1px solid #1b263b',
-    color: '#cbd5e1',
-    borderRadius: '8px',
-    padding: '8px 12px',
-    fontSize: '13px',
-    width: '100%',
-    outline: 'none',
-    transition: 'border-color 0.15s',
+// ─── useTheme ─────────────────────────────────────────────────────────────────
+//
+//  Reads data-theme attribute written by AuthenticatedLayout.
+//  Identical hook to Dashboard.jsx — single source of truth.
+//
+function useTheme() {
+    const [isDark, setIsDark] = useState(() => {
+        const attr = document.documentElement.getAttribute('data-theme')
+        if (attr) return attr !== 'light'
+        return !window.matchMedia('(prefers-color-scheme: light)').matches
+    })
+    useEffect(() => {
+        const mo = new MutationObserver(() => {
+            const attr = document.documentElement.getAttribute('data-theme')
+            setIsDark(attr ? attr !== 'light' : !window.matchMedia('(prefers-color-scheme: light)').matches)
+        })
+        mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+        const mq = window.matchMedia('(prefers-color-scheme: light)')
+        const mqh = (e) => { if (!document.documentElement.getAttribute('data-theme')) setIsDark(!e.matches) }
+        mq.addEventListener('change', mqh)
+        return () => { mo.disconnect(); mq.removeEventListener('change', mqh) }
+    }, [])
+    return isDark
 }
 
-const labelStyle = {
-    display: 'block',
-    fontSize: '10px',
-    fontWeight: '600',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-    color: '#4a7a8a',
-    marginBottom: '6px',
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const tokens = (isDark) => {
+    const d = isDark
+    return {
+        // Page & layout
+        bgPage:        d ? '#0d1b2a'                     : '#f8fafc',
+        bgCard:        d ? 'rgba(13,27,42,0.7)'          : 'rgba(255,255,255,0.97)',
+        bgCardHover:   d ? 'rgba(2,128,144,0.06)'        : 'rgba(2,128,144,0.04)',
+        bgSubtle:      d ? 'rgba(27,38,59,0.4)'          : 'rgba(241,245,249,0.8)',
+        bgThead:       d ? 'rgba(6,14,22,0.8)'           : 'rgba(248,250,252,0.95)',
+        bgInput:       d ? 'rgba(10,18,21,0.8)'          : '#ffffff',
+        bgAction:      d ? 'rgba(2,128,144,0.1)'         : 'rgba(2,128,144,0.07)',
+        bgActionHover: d ? 'rgba(2,128,144,0.18)'        : 'rgba(2,128,144,0.13)',
+        bgDanger:      d ? 'rgba(239,68,68,0.08)'        : 'rgba(220,38,38,0.06)',
+        bgDangerHover: d ? 'rgba(239,68,68,0.14)'        : 'rgba(220,38,38,0.1)',
+        bgSkeleton:    d ? 'rgba(27,38,59,0.8)'          : 'rgba(203,213,225,0.6)',
+        bgRowSep:      d ? 'rgba(27,38,59,0.6)'          : 'rgba(226,232,240,0.8)',
+        bgBtnDefault:  d ? 'rgba(27,38,59,0.4)'          : 'rgba(241,245,249,0.9)',
+        bgModal:       d ? 'rgba(10,18,28,0.98)'         : 'rgba(255,255,255,0.99)',
+        bgModalFooter: d ? 'rgba(6,14,22,0.4)'           : 'rgba(248,250,252,0.9)',
+        bgFilterActive:d ? 'rgba(2,195,154,0.12)'        : 'rgba(2,128,144,0.09)',
+        bgSuccessMsg:  d ? 'rgba(34,197,94,0.08)'        : 'rgba(22,163,74,0.07)',
+        bgErrorMsg:    d ? 'rgba(239,68,68,0.08)'        : 'rgba(220,38,38,0.06)',
+
+        // Borders
+        border:        d ? '#1b263b'                     : '#e2e8f0',
+        borderSubtle:  d ? 'rgba(27,38,59,0.6)'          : 'rgba(226,232,240,0.9)',
+        borderInput:   d ? '#1b263b'                     : '#cbd5e1',
+        borderAction:  d ? 'rgba(2,128,144,0.25)'        : 'rgba(2,128,144,0.3)',
+        borderDanger:  d ? 'rgba(239,68,68,0.2)'         : 'rgba(220,38,38,0.22)',
+        borderSuccess: d ? 'rgba(34,197,94,0.25)'        : 'rgba(22,163,74,0.3)',
+        borderError:   d ? 'rgba(239,68,68,0.2)'         : 'rgba(220,38,38,0.22)',
+        borderModal:   d ? '#1b263b'                     : '#e2e8f0',
+
+        // Text
+        textPrimary:   d ? '#f1f5f9'  : '#0f172a',
+        textSecondary: d ? '#e2e8f0'  : '#1e293b',
+        textMuted:     d ? '#94a3b8'  : '#475569',
+        textFaint:     d ? '#4a7a8a'  : '#64748b',
+        textGhost:     d ? '#2d4a5a'  : '#94a3b8',
+        textAction:    d ? '#028090'  : '#0369a1',
+        textDanger:    d ? '#f87171'  : '#dc2626',
+        textSuccess:   d ? '#4ade80'  : '#16a34a',
+        textInput:     d ? '#cbd5e1'  : '#1e293b',
+        textPlaceholder: d ? '#2d4a5a' : '#94a3b8',
+
+        // Shadow
+        shadowModal:   d ? '0 25px 60px rgba(0,0,0,0.5)'  : '0 25px 60px rgba(0,0,0,0.14)',
+    }
 }
 
-function Card({ children, className = '', style = {} }) {
+// ─── Semantic badge configs (theme-aware) ─────────────────────────────────────
+//
+//  bg/text/border are functions of isDark so they resolve at render time.
+//  Light mode uses higher opacity bg and darker text for contrast on white.
+//
+const SEV_STYLE = {
+    4: {
+        bg:     (d) => d ? 'rgba(239,68,68,0.10)'    : 'rgba(220,38,38,0.10)',
+        text:   (d) => d ? '#f87171'                 : '#7f1d1d',
+        border: (d) => d ? 'rgba(239,68,68,0.25)'    : 'rgba(220,38,38,0.3)',
+    },
+    3: {
+        bg:     (d) => d ? 'rgba(249,115,22,0.10)'   : 'rgba(234,88,12,0.10)',
+        text:   (d) => d ? '#fb923c'                 : '#7c2d12',
+        border: (d) => d ? 'rgba(249,115,22,0.25)'   : 'rgba(234,88,12,0.3)',
+    },
+    2: {
+        bg:     (d) => d ? 'rgba(245,158,11,0.10)'   : 'rgba(217,119,6,0.10)',
+        text:   (d) => d ? '#fbbf24'                 : '#78350f',
+        border: (d) => d ? 'rgba(245,158,11,0.25)'   : 'rgba(217,119,6,0.3)',
+    },
+    1: {
+        bg:     (d) => d ? 'rgba(34,197,94,0.10)'    : 'rgba(22,163,74,0.10)',
+        text:   (d) => d ? '#4ade80'                 : '#14532d',
+        border: (d) => d ? 'rgba(34,197,94,0.25)'    : 'rgba(22,163,74,0.3)',
+    },
+    0: {
+        bg:     (d) => d ? 'rgba(100,116,139,0.10)'  : 'rgba(100,116,139,0.10)',
+        text:   (d) => d ? '#94a3b8'                 : '#334155',
+        border: (d) => d ? 'rgba(100,116,139,0.25)'  : 'rgba(100,116,139,0.3)',
+    },
+}
+
+const STAT_STYLE = {
+    open:        {
+        bg:     (d) => d ? 'rgba(239,68,68,0.10)'   : 'rgba(220,38,38,0.09)',
+        text:   (d) => d ? '#f87171'                : '#7f1d1d',
+        border: (d) => d ? 'rgba(239,68,68,0.25)'   : 'rgba(220,38,38,0.28)',
+    },
+    in_progress: {
+        bg:     (d) => d ? 'rgba(56,189,248,0.10)'  : 'rgba(14,165,233,0.09)',
+        text:   (d) => d ? '#38bdf8'                : '#0c4a6e',
+        border: (d) => d ? 'rgba(56,189,248,0.25)'  : 'rgba(14,165,233,0.28)',
+    },
+    resolved:    {
+        bg:     (d) => d ? 'rgba(34,197,94,0.10)'   : 'rgba(22,163,74,0.09)',
+        text:   (d) => d ? '#4ade80'                : '#14532d',
+        border: (d) => d ? 'rgba(34,197,94,0.25)'   : 'rgba(22,163,74,0.28)',
+    },
+    closed:      {
+        bg:     (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)',
+        text:   (d) => d ? '#94a3b8'               : '#334155',
+        border: (d) => d ? 'rgba(100,116,139,0.25)' : 'rgba(100,116,139,0.28)',
+    },
+}
+
+const SRC_STYLE = {
+    wazuh:  {
+        bg:     (d) => d ? 'rgba(2,195,154,0.08)'   : 'rgba(5,150,105,0.08)',
+        text:   (d) => d ? '#02c39a'               : '#065f46',
+        border: (d) => d ? 'rgba(2,195,154,0.2)'    : 'rgba(5,150,105,0.25)',
+    },
+    manual: {
+        bg:     (d) => d ? 'rgba(100,116,139,0.10)' : 'rgba(100,116,139,0.09)',
+        text:   (d) => d ? '#94a3b8'               : '#334155',
+        border: (d) => d ? 'rgba(100,116,139,0.2)'  : 'rgba(100,116,139,0.28)',
+    },
+}
+
+const PRIORITY_LABELS = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' }
+
+// ─── Primitives ───────────────────────────────────────────────────────────────
+
+function Card({ children, className = '', style = {}, tk }) {
     return (
         <div
             className={`rounded-xl ${className}`}
-            style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid #1b263b', ...style }}
+            style={{ background: tk.bgCard, border: `1px solid ${tk.border}`, ...style }}
         >
             {children}
         </div>
     )
 }
 
-function SectionTitle({ label, meta }) {
+function SectionTitle({ label, meta, tk }) {
     return (
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
                 <div className="h-3.5 w-0.5 rounded-full" style={{ background: '#02c39a' }} />
-                <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: '#4a7a8a' }}>
+                <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>
                     {label}
                 </span>
             </div>
-            {meta && <span className="text-[10px]" style={{ color: '#2d4a5a' }}>{meta}</span>}
+            {meta && <span className="text-[10px]" style={{ color: tk.textGhost }}>{meta}</span>}
         </div>
     )
 }
 
-function StatCard({ label, value, accent, tone, sub }) {
+function StatCard({ label, value, accent, tone, sub, tk }) {
     return (
-        <Card className="relative overflow-hidden p-5 flex flex-col gap-2">
+        <Card tk={tk} className="relative overflow-hidden p-5 flex flex-col gap-2">
             <div
-                className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-full opacity-10"
-                style={{ background: accent, filter: 'blur(20px)' }}
-            />
-            <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#4a7a8a' }}>{label}</span>
+                className="pointer-events-none absolute -top-6 -right-6 h-20 w-20 rounded-full opacity-10"/>
+            <span className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>{label}</span>
             <span className="text-2xl font-bold tabular-nums" style={{ color: tone }}>{value ?? '—'}</span>
-            {sub && <span className="text-[10px]" style={{ color: '#2d4a5a' }}>{sub}</span>}
+            {sub && <span className="text-[10px]" style={{ color: tk.textGhost }}>{sub}</span>}
         </Card>
     )
 }
 
-function Skeleton({ rows = 4 }) {
+function Skeleton({ rows = 4, tk }) {
     return (
         <div className="space-y-px">
             {Array.from({ length: rows }).map((_, i) => (
-                <div key={i} className="flex gap-4 px-4 py-3 animate-pulse" style={{ borderBottom: '1px solid rgba(27,38,59,0.6)' }}>
-                    <div className="h-3 w-1/3 rounded-md" style={{ background: 'rgba(27,38,59,0.8)' }} />
-                    <div className="h-3 w-16 rounded-md" style={{ background: 'rgba(27,38,59,0.8)' }} />
-                    <div className="h-3 w-20 rounded-md" style={{ background: 'rgba(27,38,59,0.8)' }} />
+                <div key={i} className="flex gap-4 px-4 py-3 animate-pulse" style={{ borderBottom: `1px solid ${tk.borderSubtle}` }}>
+                    <div className="h-3 w-1/3 rounded-md" style={{ background: tk.bgSkeleton }} />
+                    <div className="h-3 w-16 rounded-md" style={{ background: tk.bgSkeleton }} />
+                    <div className="h-3 w-20 rounded-md" style={{ background: tk.bgSkeleton }} />
                 </div>
             ))}
         </div>
     )
 }
 
-function PaginationBar({ currentPage, totalPages, onPage }) {
+function PaginationBar({ currentPage, totalPages, onPage, tk }) {
     if (totalPages <= 1) return null
     const pages = Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
         const p = i + Math.max(1, currentPage - 3)
         return p <= totalPages ? p : null
     }).filter(Boolean)
 
-    const base = 'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-150'
-    const inactive = { background: 'transparent', border: '1px solid #1b263b', color: '#4a7a8a' }
-    const active   = { background: 'rgba(2,195,154,0.10)', border: '1px solid rgba(2,195,154,0.3)', color: '#02c39a' }
+    const base     = 'rounded-lg border px-3 py-1.5 text-xs font-medium transition-all duration-150'
+    const inactive = { background: 'transparent',              border: `1px solid ${tk.border}`,                  color: tk.textFaint   }
+    const active   = { background: 'rgba(2,195,154,0.10)',     border: '1px solid rgba(2,195,154,0.3)',            color: '#02c39a'      }
     const dis      = { opacity: 0.3, cursor: 'not-allowed' }
+    const hov      = { border: '1px solid rgba(2,128,144,0.35)', color: '#02c39a' }
 
     return (
         <div className="flex flex-wrap items-center justify-center gap-1.5">
             <button onClick={() => onPage(1)} disabled={currentPage === 1} className={base} style={{ ...inactive, ...(currentPage === 1 ? dis : {}) }}
-                onMouseEnter={e => currentPage !== 1 && Object.assign(e.currentTarget.style, { border: '1px solid rgba(2,128,144,0.35)', color: '#02c39a' })}
+                onMouseEnter={e => currentPage !== 1 && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== 1 && Object.assign(e.currentTarget.style, inactive)}>
                 <ChevronLeft size={12} className="inline" /><ChevronLeft size={12} className="inline -ml-1.5" />
             </button>
             <button onClick={() => onPage(currentPage - 1)} disabled={currentPage === 1} className={base} style={{ ...inactive, ...(currentPage === 1 ? dis : {}) }}
-                onMouseEnter={e => currentPage !== 1 && Object.assign(e.currentTarget.style, { border: '1px solid rgba(2,128,144,0.35)', color: '#02c39a' })}
+                onMouseEnter={e => currentPage !== 1 && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== 1 && Object.assign(e.currentTarget.style, inactive)}>
                 <ChevronLeft size={12} className="inline" /> Prev
             </button>
             {pages.map(p => (
                 <button key={p} onClick={() => onPage(p)} className={base} style={p === currentPage ? active : inactive}
-                    onMouseEnter={e => p !== currentPage && Object.assign(e.currentTarget.style, { border: '1px solid rgba(2,128,144,0.35)', color: '#02c39a' })}
+                    onMouseEnter={e => p !== currentPage && Object.assign(e.currentTarget.style, hov)}
                     onMouseLeave={e => p !== currentPage && Object.assign(e.currentTarget.style, inactive)}>
                     {p}
                 </button>
             ))}
             <button onClick={() => onPage(currentPage + 1)} disabled={currentPage === totalPages} className={base} style={{ ...inactive, ...(currentPage === totalPages ? dis : {}) }}
-                onMouseEnter={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, { border: '1px solid rgba(2,128,144,0.35)', color: '#02c39a' })}
+                onMouseEnter={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, inactive)}>
                 Next <ChevronRight size={12} className="inline" />
             </button>
             <button onClick={() => onPage(totalPages)} disabled={currentPage === totalPages} className={base} style={{ ...inactive, ...(currentPage === totalPages ? dis : {}) }}
-                onMouseEnter={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, { border: '1px solid rgba(2,128,144,0.35)', color: '#02c39a' })}
+                onMouseEnter={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, hov)}
                 onMouseLeave={e => currentPage !== totalPages && Object.assign(e.currentTarget.style, inactive)}>
                 <ChevronRight size={12} className="inline" /><ChevronRight size={12} className="inline -ml-1.5" />
             </button>
@@ -140,18 +265,56 @@ function PaginationBar({ currentPage, totalPages, onPage }) {
     )
 }
 
+// ─── InlineBadge ──────────────────────────────────────────────────────────────
+//
+//  cfg is now an object of functions: { bg(isDark), text(isDark), border(isDark) }
+//  Falls back to neutral style when cfg is undefined.
+//
+function InlineBadge({ label, cfg, isDark }) {
+    const bg     = typeof cfg?.bg     === 'function' ? cfg.bg(isDark)     : (cfg?.bg     ?? 'rgba(100,116,139,0.10)')
+    const text   = typeof cfg?.text   === 'function' ? cfg.text(isDark)   : (cfg?.text   ?? '#94a3b8')
+    const border = typeof cfg?.border === 'function' ? cfg.border(isDark) : (cfg?.border ?? 'rgba(100,116,139,0.25)')
+    return (
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+            style={{ background: bg, color: text, border: `1px solid ${border}` }}>
+            {label}
+        </span>
+    )
+}
+
 // ─── Create Ticket Modal ──────────────────────────────────────────────────────
 
-const PRIORITY_LABELS = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' }
-
-const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreated }) => {
-    const [form, setForm] = useState({ incident_id: incidentId || '', assigned_to: '', priority: 'medium', notes: '' })
+const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreated, tk, isDark }) => {
+    const [form, setForm] = useState({ incident_id: incidentId || '', name: '', assigned_to: '', priority: 'medium', notes: '' })
     const [loading, setLoading] = useState(false)
     const [error,   setError]   = useState(null)
+
+    const inputStyle = {
+        background:   tk.bgInput,
+        border:       `1px solid ${tk.borderInput}`,
+        color:        tk.textInput,
+        borderRadius: '8px',
+        padding:      '8px 12px',
+        fontSize:     '13px',
+        width:        '100%',
+        outline:      'none',
+        transition:   'border-color 0.15s',
+    }
+
+    const labelStyle = {
+        display:       'block',
+        fontSize:      '10px',
+        fontWeight:    '600',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color:         tk.textFaint,
+        marginBottom:  '6px',
+    }
 
     const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }))
 
     const submit = async () => {
+        if (!form.name.trim()) { setError('Please enter a ticket name.'); return }
         if (!form.assigned_to) { setError('Please assign a user.'); return }
         setLoading(true); setError(null)
         try {
@@ -164,59 +327,81 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="w-full max-w-lg mx-4 overflow-hidden rounded-xl" style={{ background: 'rgba(10,18,28,0.98)', border: '1px solid #1b263b', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+            <div className="w-full max-w-lg mx-4 overflow-hidden rounded-xl"
+                style={{ background: tk.bgModal, border: `1px solid ${tk.borderModal}`, boxShadow: tk.shadowModal }}>
 
-                <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #1b263b' }}>
+                <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: `1px solid ${tk.border}` }}>
                     <div className="flex items-center gap-3">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: 'rgba(2,128,144,0.12)', border: '1px solid rgba(2,128,144,0.25)' }}>
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg"
+                            style={{ background: tk.bgAction, border: `1px solid ${tk.borderAction}` }}>
                             <Ticket size={13} style={{ color: '#02c39a' }} />
                         </div>
                         <div>
-                            <h2 className="text-sm font-semibold" style={{ color: '#f1f5f9' }}>Create Ticket</h2>
-                            {incidentTitle && <p className="text-[11px] mt-0.5 truncate max-w-[280px]" style={{ color: '#4a7a8a' }}>{incidentTitle}</p>}
+                            <h2 className="text-sm font-semibold" style={{ color: tk.textPrimary }}>Create Ticket</h2>
+                            {incidentTitle && (
+                                <p className="text-[11px] mt-0.5 truncate max-w-[280px]" style={{ color: tk.textFaint }}>
+                                    {incidentTitle}
+                                </p>
+                            )}
                         </div>
                     </div>
-                    <button onClick={onClose} className="flex h-7 w-7 items-center justify-center rounded-lg transition-all" style={{ color: '#4a7a8a' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(27,38,59,0.6)'; e.currentTarget.style.color = '#94a3b8' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4a7a8a' }}>
+                    <button onClick={onClose}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg transition-all"
+                        style={{ color: tk.textFaint }}
+                        onMouseEnter={e => { e.currentTarget.style.background = tk.bgSubtle; e.currentTarget.style.color = tk.textMuted }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = tk.textFaint }}>
                         <X size={14} />
                     </button>
                 </div>
 
                 <div className="px-6 py-5 space-y-4">
                     {error && (
-                        <div className="rounded-lg px-4 py-2.5 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                        <div className="rounded-lg px-4 py-2.5 text-sm"
+                            style={{ background: tk.bgErrorMsg, border: `1px solid ${tk.borderError}`, color: tk.textDanger }}>
                             {error}
                         </div>
                     )}
-
+                    <div>
+                        <label style={labelStyle}>Ticket Name *</label>
+                        <input
+                            name="name"
+                            value={form.name}
+                            onChange={handle}
+                            placeholder="e.g. Suspicious login attempt…"
+                            className="inc-input"
+                            style={inputStyle}
+                        />
+                    </div>
                     <div>
                         <label style={labelStyle}>Assign to *</label>
                         <UserSearchSelect users={users} value={form.assigned_to} onChange={handle} className="" />
                     </div>
-
                     <div>
                         <label style={labelStyle}>Priority</label>
                         <select name="priority" value={form.priority} onChange={handle} style={inputStyle} className="inc-input">
                             {Object.entries(PRIORITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                         </select>
                     </div>
-
                     <div>
                         <label style={labelStyle}>Notes</label>
                         <textarea name="notes" value={form.notes} onChange={handle} rows={3}
-                            placeholder="Optional notes…" style={{ ...inputStyle, resize: 'none' }} className="inc-input" />
+                            placeholder="Optional notes…"
+                            style={{ ...inputStyle, resize: 'none' }}
+                            className="inc-input" />
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-2 px-6 py-4" style={{ borderTop: '1px solid #1b263b', background: 'rgba(6,14,22,0.4)' }}>
-                    <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150"
-                        style={{ background: 'transparent', border: '1px solid rgba(2,128,144,0.3)', color: '#028090' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(2,128,144,0.1)' }}
+                <div className="flex justify-end gap-2 px-6 py-4"
+                    style={{ borderTop: `1px solid ${tk.border}`, background: tk.bgModalFooter }}>
+                    <button onClick={onClose}
+                        className="rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150"
+                        style={{ background: 'transparent', border: `1px solid ${tk.borderAction}`, color: tk.textAction }}
+                        onMouseEnter={e => { e.currentTarget.style.background = tk.bgAction }}
                         onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
                         Cancel
                     </button>
-                    <button onClick={submit} disabled={loading} className="rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150"
+                    <button onClick={submit} disabled={loading}
+                        className="rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150"
                         style={{ background: '#02c39a', color: '#0d1b2a', opacity: loading ? 0.6 : 1 }}
                         onMouseEnter={e => !loading && (e.currentTarget.style.background = '#02e0b1')}
                         onMouseLeave={e => !loading && (e.currentTarget.style.background = '#02c39a')}>
@@ -228,35 +413,6 @@ const CreateTicketModal = ({ incidentId, incidentTitle, users, onClose, onCreate
     )
 }
 
-// ─── Severity / Status Badge ──────────────────────────────────────────────────
-
-const SEV_STYLE = {
-    4: { bg: 'rgba(239,68,68,0.10)',   text: '#f87171', border: 'rgba(239,68,68,0.25)' },
-    3: { bg: 'rgba(249,115,22,0.10)',  text: '#fb923c', border: 'rgba(249,115,22,0.25)' },
-    2: { bg: 'rgba(245,158,11,0.10)',  text: '#fbbf24', border: 'rgba(245,158,11,0.25)' },
-    1: { bg: 'rgba(34,197,94,0.10)',   text: '#4ade80', border: 'rgba(34,197,94,0.25)' },
-    0: { bg: 'rgba(100,116,139,0.10)', text: '#94a3b8', border: 'rgba(100,116,139,0.25)' },
-}
-const STAT_STYLE = {
-    open:        { bg: 'rgba(239,68,68,0.10)',   text: '#f87171', border: 'rgba(239,68,68,0.25)' },
-    in_progress: { bg: 'rgba(56,189,248,0.10)',  text: '#38bdf8', border: 'rgba(56,189,248,0.25)' },
-    resolved:    { bg: 'rgba(34,197,94,0.10)',   text: '#4ade80', border: 'rgba(34,197,94,0.25)' },
-    closed:      { bg: 'rgba(100,116,139,0.10)', text: '#94a3b8', border: 'rgba(100,116,139,0.25)' },
-}
-const SRC_STYLE = {
-    wazuh:  { bg: 'rgba(2,195,154,0.08)',  text: '#02c39a', border: 'rgba(2,195,154,0.2)' },
-    manual: { bg: 'rgba(100,116,139,0.10)', text: '#94a3b8', border: 'rgba(100,116,139,0.2)' },
-}
-
-function InlineBadge({ label, cfg }) {
-    return (
-        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-            style={{ background: cfg?.bg, color: cfg?.text, border: `1px solid ${cfg?.border}` }}>
-            {label}
-        </span>
-    )
-}
-
 const PAGE_SIZE_OPTIONS = [5, 10, 25, 50]
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -265,6 +421,32 @@ function Incidents() {
     const navigate = useNavigate()
     const { isAdmin } = useAuth()
     const { can, loading: permissionsLoading } = usePermissions()
+
+    const isDark = useTheme()
+    const tk     = useMemo(() => tokens(isDark), [isDark])
+
+    // Derived input/label styles — computed from tk so they react to theme changes
+    const inputStyle = useMemo(() => ({
+        background:   tk.bgInput,
+        border:       `1px solid ${tk.borderInput}`,
+        color:        tk.textInput,
+        borderRadius: '8px',
+        padding:      '8px 12px',
+        fontSize:     '13px',
+        width:        '100%',
+        outline:      'none',
+        transition:   'border-color 0.15s',
+    }), [tk])
+
+    const labelStyle = useMemo(() => ({
+        display:       'block',
+        fontSize:      '10px',
+        fontWeight:    '600',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        color:         tk.textFaint,
+        marginBottom:  '6px',
+    }), [tk])
 
     const [incidents,        setIncidents]        = useState([])
     const [stats,            setStats]            = useState(null)
@@ -291,30 +473,23 @@ function Incidents() {
     const [filterTimeTo,   setFilterTimeTo]   = useState('')
     const [filterTitle,    setFilterTitle]    = useState('')
 
-
-    const [showAddIncident, setShowAddIncident] = useState(false)
-
-
-    const [editingIncidentId, setEditingIncidentId] = useState(null)
+    const [showAddIncident,    setShowAddIncident]    = useState(false)
+    const [editingIncidentId,  setEditingIncidentId]  = useState(null)
 
     const fetchStats = () => { api.get('/incidents/stats').then(r => setStats(r.data)).catch(() => {}) }
     useEffect(() => { fetchStats() }, [])
-
-    useEffect(() => {
-        api.get('/users').then(r => setUsers(r.data || [])).catch(() => {})
-    }, [])
+    useEffect(() => { api.get('/users').then(r => setUsers(r.data || [])).catch(() => {}) }, [])
 
     const fetchIncidents = useCallback(async () => {
         setLoading(true); setError('')
         try {
             const params = {}
-            if (filterStatus)   params.status     = filterStatus
-            if (filterSeverity !== '') params.severity = filterSeverity
-            if (filterSource)   params.source     = filterSource
-            if (filterAgent)    params.agent_name = filterAgent
-            if (filterTimeFrom) params.time_from  = filterTimeFrom
-            if (filterTimeTo)   params.time_to    = filterTimeTo
-
+            if (filterStatus)        params.status     = filterStatus
+            if (filterSeverity !== '') params.severity  = filterSeverity
+            if (filterSource)        params.source     = filterSource
+            if (filterAgent)         params.agent_name = filterAgent
+            if (filterTimeFrom)      params.time_from  = filterTimeFrom
+            if (filterTimeTo)        params.time_to    = filterTimeTo
             const res = await api.get('/incidents', { params })
             setIncidents(res.data.incidents || [])
             setCurrentPage(1)
@@ -379,15 +554,16 @@ function Incidents() {
     const totalResolved = stats?.byStatus?.find(s => s._id === 'resolved' || s._id === 'closed')?.count ?? 0
     const totalCritical = stats?.bySeverity?.find(s => s._id === 4)?.count ?? 0
     const totalHigh     = stats?.bySeverity?.find(s => s._id === 3)?.count ?? 0
-    const totalMedium     = stats?.bySeverity?.find(s => s._id === 2)?.count ?? 0
+    const totalMedium   = stats?.bySeverity?.find(s => s._id === 2)?.count ?? 0
 
     if (permissionsLoading) {
         return (
-            <div className="space-y-6" style={{ color: '#e2e8f0' }}>
-                <div className="h-8 w-48 animate-pulse rounded-lg" style={{ background: 'rgba(27,38,59,0.5)' }} />
+            <div className="space-y-6" style={{ color: tk.textSecondary }}>
+                <div className="h-8 w-48 animate-pulse rounded-lg" style={{ background: tk.bgSkeleton }} />
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className="h-24 animate-pulse rounded-xl" style={{ background: 'rgba(13,27,42,0.7)', border: '1px solid #1b263b' }} />
+                        <div key={i} className="h-24 animate-pulse rounded-xl"
+                            style={{ background: tk.bgCard, border: `1px solid ${tk.border}` }} />
                     ))}
                 </div>
             </div>
@@ -400,24 +576,34 @@ function Incidents() {
                 @keyframes inc-fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
                 .inc-page { animation: inc-fadein 0.35s ease-out both; }
                 .inc-input:focus { border-color: rgba(2,195,154,0.5) !important; box-shadow: 0 0 0 3px rgba(2,195,154,0.08) !important; }
-                .inc-row:hover { background: rgba(2,128,144,0.06) !important; }
+                .inc-row:hover { background: var(--inc-row-hover) !important; }
             `}</style>
 
-            <div className="inc-page space-y-6" style={{ color: '#e2e8f0' }}>
+            {/* CSS var for row hover — can't use tk directly in .inc-row:hover rule */}
+            <style>{`:root { --inc-row-hover: ${tk.bgCardHover}; }`}</style>
+
+            <div className="inc-page space-y-6" style={{ color: tk.textSecondary }}>
 
                 {/* ── Header ── */}
-                <div className="flex flex-wrap items-end justify-between gap-4" style={{ borderBottom: '1px solid #1b263b', paddingBottom: '20px' }}>
+                <div
+                    className="flex flex-wrap items-end justify-between gap-4"
+                    style={{ borderBottom: `1px solid ${tk.border}`, paddingBottom: '20px' }}
+                >
                     <div>
-                        <h2 className="text-lg font-semibold tracking-tight" style={{ color: '#f1f5f9' }}>Incident Management</h2>
-                        <p className="mt-0.5 text-[11px]" style={{ color: '#4a7a8a' }}>Monitor, investigate, and resolve security incidents</p>
+                        <h2 className="text-lg font-semibold tracking-tight" style={{ color: tk.textPrimary }}>
+                            Incident Management
+                        </h2>
+                        <p className="mt-0.5 text-[11px]" style={{ color: tk.textFaint }}>
+                            Monitor, investigate, and resolve security incidents
+                        </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {(isAdmin || can('SYNC_INCIDENTS')) && (
                             <button
                                 onClick={handleSync} disabled={syncing}
                                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-150"
-                                style={{ background: 'transparent', border: '1px solid rgba(2,128,144,0.35)', color: '#028090', opacity: syncing ? 0.6 : 1 }}
-                                onMouseEnter={e => !syncing && (e.currentTarget.style.background = 'rgba(2,128,144,0.1)')}
+                                style={{ background: 'transparent', border: `1px solid ${tk.borderAction}`, color: tk.textAction, opacity: syncing ? 0.6 : 1 }}
+                                onMouseEnter={e => !syncing && (e.currentTarget.style.background = tk.bgAction)}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                             >
                                 {syncing
@@ -426,26 +612,15 @@ function Incidents() {
                                 }
                             </button>
                         )}
-                        {(isAdmin || can('CREATE_INCIDENT')) && (
-                            <button
-                                onClick={() => setShowAddIncident(true)}
-                                className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-150"
-                                style={{ background: '#02c39a', color: '#0d1b2a' }}
-                                onMouseEnter={e => (e.currentTarget.style.background = '#02e0b1')}
-                                onMouseLeave={e => (e.currentTarget.style.background = '#02c39a')}
-                            >
-                                <Plus size={13} /> Add Incident
-                            </button>
-                        )}
                     </div>
                 </div>
 
                 {/* ── Sync message ── */}
                 {syncMsg && (
                     <div className="rounded-xl px-4 py-3 text-sm" style={{
-                        background: syncMsg.type === 'success' ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-                        border: `1px solid ${syncMsg.type === 'success' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
-                        color: syncMsg.type === 'success' ? '#4ade80' : '#f87171',
+                        background: syncMsg.type === 'success' ? tk.bgSuccessMsg : tk.bgErrorMsg,
+                        border: `1px solid ${syncMsg.type === 'success' ? tk.borderSuccess : tk.borderError}`,
+                        color: syncMsg.type === 'success' ? tk.textSuccess : tk.textDanger,
                     }}>
                         {syncMsg.text}
                     </div>
@@ -454,53 +629,30 @@ function Incidents() {
                 {/* ── Stats ── */}
                 {stats && (
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-
-                        <StatCard
-                            label="Open"
-                            value={totalOpen}
-                            tone="#fbbf24"
-                        />
-
-                        <StatCard
-                            label="Resolved"
-                            value={totalResolved}
-                            tone="#22c55e"
-                        />
-
-                        <StatCard
-                            label="Critical"
-                            value={totalCritical}
-                            tone="red"
-                        />
-
-                        <StatCard
-                            label="High"
-                            value={totalHigh}
-                            tone="#fb923c"
-                        />
-
-                        <StatCard
-                            label="Medium"
-                            value={totalMedium}
-                            tone="#fbbf24"
-                        />
-
+                        <StatCard label="Open"     value={totalOpen}     tone="#f59e0b" tk={tk} />
+                        <StatCard label="Resolved" value={totalResolved} tone="#22c55e" tk={tk} />
+                        {/* FIX: tone="red" (CSS string) replaced with valid hex — consistent with design system */}
+                        <StatCard label="Critical" value={totalCritical} tone="#ef4444" tk={tk} />
+                        <StatCard label="High"     value={totalHigh}     tone="#fb923c" tk={tk} />
+                        <StatCard label="Medium"   value={totalMedium}   tone="#f59e0b" tk={tk} />
                     </div>
                 )}
 
                 {/* ── Filters ── */}
-                <Card className="overflow-hidden">
+                <Card tk={tk} className="overflow-hidden">
                     <div
                         className="flex items-center justify-between px-5 py-3 cursor-pointer select-none"
                         onClick={() => setShowFilters(f => !f)}
-                        style={{ borderBottom: showFilters ? '1px solid #1b263b' : 'none' }}
+                        style={{ borderBottom: showFilters ? `1px solid ${tk.border}` : 'none' }}
                     >
                         <div className="flex items-center gap-2">
-                            <SlidersHorizontal size={13} style={{ color: '#4a7a8a' }} />
-                            <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: '#4a7a8a' }}>Filters</span>
+                            <SlidersHorizontal size={13} style={{ color: tk.textFaint }} />
+                            <span className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: tk.textFaint }}>
+                                Filters
+                            </span>
                             {hasActiveFilters && (
                                 <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                                    style={{ background: 'rgba(2,195,154,0.12)', color: '#02c39a' }}>
+                                    style={{ background: tk.bgFilterActive, color: '#02c39a' }}>
                                     active
                                 </span>
                             )}
@@ -509,13 +661,13 @@ function Incidents() {
                             {hasActiveFilters && (
                                 <button onClick={e => { e.stopPropagation(); resetFilters() }}
                                     className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition-all"
-                                    style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.14)' }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.08)' }}>
+                                    style={{ background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = tk.bgDangerHover }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = tk.bgDanger }}>
                                     <X size={11} /> Reset
                                 </button>
                             )}
-                            <ChevronRight size={13} style={{ color: '#4a7a8a', transform: showFilters ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+                            <ChevronRight size={13} style={{ color: tk.textFaint, transform: showFilters ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
                         </div>
                     </div>
 
@@ -579,18 +731,19 @@ function Incidents() {
 
                 {/* ── Count + page size ── */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs" style={{ color: '#4a7a8a' }}>
+                    <p className="text-xs" style={{ color: tk.textFaint }}>
                         {loading ? 'Loading…' : (
                             filtered.length === 0 ? 'No results' :
                             `Showing ${startIndex + 1}–${Math.min(startIndex + pageSize, filtered.length)} of ${filtered.length} incident${filtered.length !== 1 ? 's' : ''}`
                         )}
                     </p>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs" style={{ color: '#4a7a8a' }}>Rows:</span>
+                        <span className="text-xs" style={{ color: tk.textFaint }}>Rows:</span>
                         <select
                             className="rounded-lg px-2 py-1 text-xs"
-                            style={{ background: 'rgba(10,18,21,0.8)', border: '1px solid #1b263b', color: '#94a3b8', outline: 'none' }}
-                            value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
+                            style={{ background: tk.bgInput, border: `1px solid ${tk.border}`, color: tk.textMuted, outline: 'none' }}
+                            value={pageSize}
+                            onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1) }}
                         >
                             {PAGE_SIZE_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
                         </select>
@@ -599,30 +752,32 @@ function Incidents() {
 
                 {/* ── Error ── */}
                 {error && (
-                    <div className="rounded-xl px-4 py-3 text-sm" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}>
+                    <div className="rounded-xl px-4 py-3 text-sm"
+                        style={{ background: tk.bgErrorMsg, border: `1px solid ${tk.borderError}`, color: tk.textDanger }}>
                         {error}
                     </div>
                 )}
 
                 {/* ── Loading skeleton ── */}
-                {loading && <Card><Skeleton rows={4} /></Card>}
+                {loading && <Card tk={tk}><Skeleton rows={4} tk={tk} /></Card>}
 
                 {/* ── Empty ── */}
                 {!loading && !error && filtered.length === 0 && (
-                    <Card className="py-16 text-center">
+                    <Card tk={tk} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl"
-                                style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                                <Siren size={20} style={{ color: '#f87171' }} />
+                                style={{ background: tk.bgDanger, border: `1px solid ${tk.borderDanger}` }}>
+                                <Siren size={20} style={{ color: tk.textDanger }} />
                             </div>
                             <div>
-                                <p className="text-sm font-medium" style={{ color: '#94a3b8' }}>No incidents found</p>
-                                <p className="mt-1 text-[11px]" style={{ color: '#4a7a8a' }}>
+                                <p className="text-sm font-medium" style={{ color: tk.textMuted }}>No incidents found</p>
+                                <p className="mt-1 text-[11px]" style={{ color: tk.textFaint }}>
                                     {hasActiveFilters ? 'Try adjusting your filters' : 'No incidents match the current view'}
                                 </p>
                             </div>
                             {hasActiveFilters && (
-                                <button onClick={resetFilters} className="text-xs transition-opacity hover:opacity-70" style={{ color: '#02c39a' }}>
+                                <button onClick={resetFilters} className="text-xs transition-opacity hover:opacity-70"
+                                    style={{ color: '#02c39a' }}>
                                     Clear filters
                                 </button>
                             )}
@@ -632,14 +787,15 @@ function Incidents() {
 
                 {/* ── Table ── */}
                 {!loading && filtered.length > 0 && (
-                    <Card className="overflow-hidden">
+                    <Card tk={tk} className="overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[1080px]" style={{ borderCollapse: 'collapse' }}>
                                 <thead>
-                                    <tr style={{ background: 'rgba(6,14,22,0.8)', borderBottom: '1px solid #1b263b' }}>
+                                    <tr style={{ background: tk.bgThead, borderBottom: `1px solid ${tk.border}` }}>
                                         {['Title', 'Severity', 'Status', 'Source', 'Agent', 'Timestamp', 'Actions'].map((h, i) => (
-                                            <th key={h} className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest"
-                                                style={{ color: '#4a7a8a', textAlign: i === 6 ? 'center' : 'left' }}>
+                                            <th key={h}
+                                                className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest"
+                                                style={{ color: tk.textFaint, textAlign: i === 6 ? 'center' : 'left' }}>
                                                 {h}
                                             </th>
                                         ))}
@@ -650,10 +806,10 @@ function Incidents() {
                                         const sevNum = incident.severity ?? 0
                                         return (
                                             <tr key={incident._id} className="inc-row"
-                                                style={{ background: 'transparent', borderBottom: '1px solid rgba(27,38,59,0.6)', transition: 'background 0.15s' }}>
+                                                style={{ background: 'transparent', borderBottom: `1px solid ${tk.borderSubtle}`, transition: 'background 0.15s' }}>
                                                 <td className="px-4 py-3 max-w-[240px]">
                                                     <span className="block truncate text-sm font-medium" title={incident.title}
-                                                        style={{ color: '#e2e8f0' }}>
+                                                        style={{ color: tk.textSecondary }}>
                                                         {incident.title}
                                                     </span>
                                                 </td>
@@ -661,64 +817,60 @@ function Incidents() {
                                                     <InlineBadge
                                                         label={SEVERITY_LABELS[sevNum] ?? sevNum}
                                                         cfg={SEV_STYLE[sevNum] ?? SEV_STYLE[0]}
+                                                        isDark={isDark}
                                                     />
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <InlineBadge
                                                         label={STATUS_LABELS[incident.status] ?? incident.status}
                                                         cfg={STAT_STYLE[incident.status] ?? STAT_STYLE.open}
+                                                        isDark={isDark}
                                                     />
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <InlineBadge
                                                         label={incident.source}
                                                         cfg={SRC_STYLE[incident.source] ?? SRC_STYLE.manual}
+                                                        isDark={isDark}
                                                     />
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <span className="font-mono text-xs" style={{ color: '#4a7a8a' }}>
+                                                    <span className="font-mono text-xs" style={{ color: tk.textFaint }}>
                                                         {incident.agent_name ?? '—'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <span className="text-xs" style={{ color: '#4a7a8a' }}>{fmt(incident.timestamp)}</span>
+                                                    <span className="text-xs" style={{ color: tk.textFaint }}>
+                                                        {fmt(incident.timestamp)}
+                                                    </span>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-center gap-1.5">
-                                                        {(isAdmin || can('VIEW_INCIDENT_DETAILS')) && (
-                                                            <button onClick={() => handleViewDetails(incident._id)}
-                                                                className="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all duration-150"
-                                                                style={{ background: 'rgba(2,128,144,0.08)', border: '1px solid rgba(2,128,144,0.2)', color: '#028090' }}
-                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(2,128,144,0.16)'; e.currentTarget.style.color = '#02c39a' }}
-                                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(2,128,144,0.08)'; e.currentTarget.style.color = '#028090' }}>
-                                                                Details
-                                                            </button>
-                                                        )}
                                                         {(isAdmin || can('CREATE_TICKET')) && (
-                                                            <button onClick={() => handleCreateTicket(incident)}
-                                                                className="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all duration-150"
-                                                                style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)', color: '#38bdf8' }}
-                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(56,189,248,0.16)' }}
-                                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(56,189,248,0.08)' }}>
-                                                                Ticket
+                                                            <button title="Ticket" onClick={() => handleCreateTicket(incident)}
+                                                                className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
+                                                                style={{ background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted }}
+                                                                onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, border: `1px solid ${tk.borderAction}`, color: '#02c39a' })}
+                                                                onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted })}>
+                                                                <Ticket size={13} />
                                                             </button>
                                                         )}
                                                         {(isAdmin || can('UPDATE_INCIDENT')) && (
-                                                            <button onClick={() => setEditingIncidentId(incident._id)}
-                                                                className="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all duration-150"
-                                                                style={{ background: 'rgba(2,195,154,0.08)', border: '1px solid rgba(2,195,154,0.2)', color: '#02c39a' }}
-                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(2,195,154,0.16)' }}
-                                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(2,195,154,0.08)' }}>
-                                                                Edit
+                                                            <button title="Edit" onClick={() => setEditingIncidentId(incident._id)}
+                                                                className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
+                                                                style={{ background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted }}
+                                                                onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, border: `1px solid ${tk.borderAction}`, color: '#02c39a' })}
+                                                                onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted })}>
+                                                                <Pencil size={13} />
                                                             </button>
                                                         )}
                                                         {(isAdmin || can('DELETE_INCIDENT')) && (
-                                                            <button onClick={() => setDeleteTarget({ id: incident._id, title: incident.title })}
-                                                                className="rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all duration-150"
-                                                                style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171' }}
-                                                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.14)' }}
-                                                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.06)' }}>
-                                                                Delete
+                                                            <button title="Delete" onClick={() => setDeleteTarget({ id: incident._id, title: incident.title })}
+                                                                className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
+                                                                style={{ background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger }}
+                                                                onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgDangerHover, border: `1px solid rgba(239,68,68,0.35)`, color: isDark ? '#fca5a5' : '#b91c1c' })}
+                                                                onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgDanger, border: `1px solid ${tk.borderDanger}`, color: tk.textDanger })}>
+                                                                <Trash2 size={13} />
                                                             </button>
                                                         )}
                                                     </div>
@@ -733,10 +885,7 @@ function Incidents() {
                 )}
 
                 {showAddIncident && (
-                    <Addincident
-                        onClose={() => setShowAddIncident(false)}
-                        onSaved={() => fetchIncidents()}
-                    />
+                    <Addincident onClose={() => setShowAddIncident(false)} onSaved={() => fetchIncidents()} />
                 )}
 
                 {editingIncidentId && (
@@ -749,7 +898,7 @@ function Incidents() {
 
                 {/* ── Pagination ── */}
                 {!loading && filtered.length > pageSize && (
-                    <PaginationBar currentPage={currentPage} totalPages={totalPages} onPage={setCurrentPage} />
+                    <PaginationBar currentPage={currentPage} totalPages={totalPages} onPage={setCurrentPage} tk={tk} />
                 )}
 
                 {/* ── Modals ── */}
@@ -777,6 +926,8 @@ function Incidents() {
                         users={users}
                         onClose={handleTicketCreated}
                         onCreated={handleTicketCreated}
+                        tk={tk}
+                        isDark={isDark}
                     />
                 )}
             </div>
