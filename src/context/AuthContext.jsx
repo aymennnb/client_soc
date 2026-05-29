@@ -44,7 +44,7 @@ const clearSession = () => {
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }) {
-    const [loading,     setLoading]     = useState(true)
+    const [loading,    setLoading]     = useState(true)
     const [token,       setToken]       = useState(null)
     const [userInfo,    setUserInfo]    = useState(null)
     const [error,       setError]       = useState(null)

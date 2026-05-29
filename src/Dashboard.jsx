@@ -781,7 +781,7 @@ export default function Dashboard() {
         { label: 'Create ticket',         icon: Ticket,      onClick: () => navigate('/tickets') },
         { label: 'View critical vulns',   icon: ShieldAlert, onClick: () => navigate('/vulnerabilities') },
         { label: 'Open active incidents', icon: Siren,       onClick: () => navigate('/incidents') },
-        { label: 'Launch scan',           icon: PlayCircle,  onClick: () => navigate('/vulnerabilities/sync') },
+        { label: 'Launch scan',           icon: PlayCircle,  onClick: () => navigate('/vulnerabilities/launch') },
         { label: 'Export reports',        icon: FileDown,    onClick: () => navigate('/vulnerabilities') },
     ]
 

@@ -6,8 +6,6 @@ import AuthenticatedLayout  from './layouts/AuthenticatedLayout.jsx'
 import Login                from './auth/Login.jsx'
 
 import Users                from './users/Users.jsx'
-import CreateUser           from './users/CreateUser.jsx'
-import EditUser             from './users/EditUser.jsx'
 import Settings             from './users/Settings.jsx'
 import UserPermissions      from './users/UserPermissions.jsx'
 
@@ -78,12 +76,6 @@ function AppRoutes() {
                     {/* Users — Admin only */}
                     <Route path="/users" element={
                         <AdminRoute><Users /></AdminRoute>
-                    } />
-                    <Route path="/users/create" element={
-                        <AdminRoute><CreateUser /></AdminRoute>
-                    } />
-                    <Route path="/users/edit/:id" element={
-                        <AdminRoute><EditUser /></AdminRoute>
                     } />
                     <Route path="/users/:id/permissions" element={
                         <AdminRoute><UserPermissions /></AdminRoute>

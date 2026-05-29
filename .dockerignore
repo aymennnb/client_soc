@@ -1,0 +1,39 @@
+# ── Fichiers à exclure du contexte de build frontend ────────
+
+# Dépendances locales (reconstruites dans le stage deps)
+node_modules/
+
+# Fichiers de build locaux (recréés dans le stage builder)
+dist/
+build/
+
+# Variables d'environnement locales
+.env
+.env.*
+*.env
+# EXCEPTION : .env.production peut être utile (valeurs par défaut non-secrets)
+# Si vous l'utilisez, décommentez la ligne suivante pour le ré-inclure :
+# !.env.production
+
+# Tests
+tests/
+__tests__/
+*.test.*
+*.spec.*
+cypress/
+vitest.config.*
+
+# Documentation
+*.md
+docs/
+
+# IDE et outils
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# CI/CD
+.github/
+Dockerfile*
+docker-compose*
