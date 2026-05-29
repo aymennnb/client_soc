@@ -10,8 +10,6 @@ import Settings             from './users/Settings.jsx'
 import UserPermissions      from './users/UserPermissions.jsx'
 
 import Vulnerabilities      from './vulnerabilities/Vulnerabilities.jsx'
-import AddVulnerability     from './vulnerabilities/AddVulnerability.jsx'
-import EditVulnerability    from './vulnerabilities/EditVulnerability.jsx'
 import NessusSync           from './vulnerabilities/NessusSync.jsx'
 import LaunchScan           from './vulnerabilities/LaunchScan.jsx'
 
@@ -24,6 +22,7 @@ import Tickets         from './tickets/Tickets.jsx'
 import Journals         from './jornaux/Journaux.jsx'
 
 import Dashboard            from './Dashboard.jsx'
+
 
 function AdminRoute({ children }) {
     const { isAdmin, loading } = useKeycloak()
@@ -61,8 +60,6 @@ function AppRoutes() {
 
                     {/* Vulnerabilities */}
                     <Route path="/vulnerabilities" element={<Vulnerabilities />} />
-                    <Route path="/vulnerabilities/add" element={<AddVulnerability />} />
-                    <Route path="/vulnerabilities/edit/:id" element={<EditVulnerability />} />
                     <Route path="/vulnerabilities/sync" element={<NessusSync />} />
                     <Route path="/vulnerabilities/launch" element={<LaunchScan />} />
 
