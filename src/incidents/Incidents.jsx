@@ -741,10 +741,6 @@ function Incidents() {
                 {!loading && !error && filtered.length === 0 && (
                     <Card tk={tk} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl"
-                                style={{ background: tk.bgDanger, border: `1px solid ${tk.borderDanger}` }}>
-                                <Siren size={20} style={{ color: tk.textDanger }} />
-                            </div>
                             <div>
                                 <p className="text-sm font-medium" style={{ color: tk.textMuted }}>No incidents found</p>
                                 <p className="mt-1 text-[11px]" style={{ color: tk.textFaint }}>

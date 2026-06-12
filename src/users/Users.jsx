@@ -413,10 +413,6 @@ function Users() {
                 {!loading && users.length === 0 && !error && (
                     <Card tk={tk} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl"
-                                style={{ background: tk.bgEmpty, border: `1px solid ${tk.borderEmpty}` }}>
-                                <Plus size={20} style={{ color: tk.textAction }} />
-                            </div>
                             <div>
                                 <p className="text-sm font-medium" style={{ color: tk.textMuted }}>No users found</p>
                                 <p className="mt-1 text-[11px]" style={{ color: tk.textFaint }}>
@@ -469,15 +465,6 @@ function Users() {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center gap-1.5">
-                                                    <button
-                                                        title="Permissions"
-                                                        onClick={() => navigate(`/users/${user.id}/permissions`)}
-                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-150"
-                                                        style={{ background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted }}
-                                                        onMouseEnter={e => Object.assign(e.currentTarget.style, { background: tk.bgAction, border: `1px solid ${tk.borderAction}`, color: '#02c39a' })}
-                                                        onMouseLeave={e => Object.assign(e.currentTarget.style, { background: tk.bgBtnDefault, border: `1px solid ${tk.border}`, color: tk.textMuted })}>
-                                                        <Shield size={13} />
-                                                    </button>
                                                     <button
                                                         title="Edit"
                                                         onClick={() => setEditingUserId(user.id)}

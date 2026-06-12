@@ -7,6 +7,8 @@ import {
     AlertCircle, Rocket, Layout, Target,
 } from 'lucide-react'
 
+const SCAN_NAME_REGEX = /^[a-zA-Z0-9À-ÿ\s\-_]{3,50}$/;
+const TARGET_REGEX = /^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]\.)*[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}(\/\d{1,2})?$|^(?:[0-9]{1,3}\.){3}[0-9]{1,3}(\/\d{1,2})?$/;
 // ─── useTheme ─────────────────────────────────────────────────────────────────
 // Identical to NessusSync
 
@@ -677,9 +679,16 @@ export default function LaunchScan() {
     const targetList = targets.split(/[\n,]+/).map(t => t.trim()).filter(Boolean)
 
     const canNext = () => {
-        if (step === 1) return scanName.trim().length > 0 && targetList.length > 0
+        if (step === 1) {
+                const isNameValid = SCAN_NAME_REGEX.test(scanName.trim());
+
+                const hasTargets = targetList.length > 0;
+                const areAllTargetsValid = targetList.every(target => TARGET_REGEX.test(target));
+
+                return isNameValid && hasTargets && areAllTargetsValid;
+            }
         if (step === 2) return !!selectedTemplate
-        if (step === 3) return !launching   // folder is optional — always can proceed
+        if (step === 3) return !launching
         return false
     }
 

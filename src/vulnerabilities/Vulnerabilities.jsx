@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { usePermissions } from '../hooks/useAuth'
 import api from '../api'
-import DetailVulnerability from './DetailVulnerability'
-import EditVulnerability from './EditVulnerability'
+import DetailVulnerability from './DetailVulnerability.jsx'
+import EditVulnerability from './EditVulnerability.jsx'
 import DeleteModal from '../componants/DeleteModal'
-import AddVulnerability from './AddVulnerability'
+import AddVulnerability from './AddVulnerability.jsx'
 import * as XLSX from 'xlsx'
 
 import {
@@ -842,10 +842,6 @@ function Vulnerabilities() {
                 {!loading && !error && filteredVulns.length === 0 && (
                     <Card tk={tk} className="py-16 text-center">
                         <div className="flex flex-col items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl"
-                                style={{ background: tk.bgAction, border: `1px solid ${tk.borderAction}` }}>
-                                <ShieldAlert size={20} style={{ color: tk.textAction }} />
-                            </div>
                             <div>
                                 <p className="text-sm font-medium" style={{ color: tk.textMuted }}>No vulnerabilities found</p>
                                 <p className="mt-1 text-[11px]" style={{ color: tk.textFaint }}>
@@ -857,13 +853,6 @@ function Vulnerabilities() {
                                     <button onClick={resetFilters} className="text-xs transition-opacity hover:opacity-70"
                                         style={{ color: '#02c39a' }}>
                                         Clear filters
-                                    </button>
-                                )}
-                                {(isAdmin || can('CREATE_VULNERABILITY')) && (
-                                    <button onClick={() => navigate('/vulnerabilities/add')}
-                                        className="text-xs transition-opacity hover:opacity-70"
-                                        style={{ color: tk.textFaint }}>
-                                        Create new entry
                                     </button>
                                 )}
                             </div>

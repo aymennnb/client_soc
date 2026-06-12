@@ -9,7 +9,7 @@ build/
 
 # Variables d'environnement locales
 .env
-.env.*
+../.env.production
 *.env
 # EXCEPTION : .env.production peut être utile (valeurs par défaut non-secrets)
 # Si vous l'utilisez, décommentez la ligne suivante pour le ré-inclure :
